@@ -7,6 +7,12 @@ export interface PriceCheckResponse {
   error?: string;
 }
 
+interface PriceCheckApiOptions {
+  itemName: string;
+  itemSpecifics?: Record<string, string>;
+  condition?: string;
+}
+
 // Use the actual Vercel deployment URL
 const VERCEL_DEPLOYMENT_URL = "https://ebay-buyer-tool-zp52.vercel.app";
 
@@ -80,19 +86,7 @@ function standardizeConditionValue(condition?: string): string {
   return upperCondition;
 }
 
-// Temporary simplified export for testing
-export function extractItemSearchParams(options: any): any {
-  return { model: '', brand: '', condition: '', searchTerm: '' };
-}
-
-// Comment out the original export and interface for testing
-/*
-interface PriceCheckApiOptions {
-  itemName: string;
-  itemSpecifics?: Record<string, string>;
-  condition?: string;
-}
-
+// Simplified return type to avoid Vite parsing issues
 export function extractItemSearchParams(options: PriceCheckApiOptions): {
   model: string;
   brand: string;
@@ -163,7 +157,6 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
     searchTerm: searchTerm.trim()
   };
 }
-*/
 
 export async function getPriceCheck(options: PriceCheckApiOptions): Promise<PriceCheckResponse> {
   try {
