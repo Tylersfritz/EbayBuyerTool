@@ -2,15 +2,14 @@
 import { useState, useEffect } from 'react';
 import { getCurrentListing } from '@/utils/listing/listingUtils';
 import { shouldUseAuctionMockData } from '@/utils/mock/mockModeUtils';
-import { getPriceCheck } from '@/api/priceApiService';
+import { getPriceCheck, PriceCheckResponse } from '@/api/priceApiService';
 import { ListingInfo, PriceCheckState } from './types/priceCheckTypes';
-import { PriceCheckResponse } from '@/api/priceApiService';
-import { extractItemSearchParams } from '@/api/priceApiClient';
-import { 
-  mockPriceCheckData, 
-  mockListingInfo, 
-  mockAuctionListingInfo, 
-  getMockDataForMode 
+import { extractItemSearchParams } from '../../api/priceApiClient'; // Relative path
+import {
+  mockPriceCheckData,
+  mockListingInfo,
+  mockAuctionListingInfo,
+  getMockDataForMode
 } from './utils/mockData';
 import { useModeContext } from '@/context/ModeContext';
 
