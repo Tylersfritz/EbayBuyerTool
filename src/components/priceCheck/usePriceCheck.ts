@@ -4,7 +4,7 @@ import { getCurrentListing } from '@/utils/listing/listingUtils';
 import { shouldUseAuctionMockData } from '@/utils/mock/mockModeUtils';
 import { getPriceCheck, PriceCheckResponse } from '@/api/priceApiService';
 import { ListingInfo, PriceCheckState } from './types/priceCheckTypes';
-import { extractItemSearchParams } from '../../api/priceApiClient'; // Relative path
+import { extractItemSearchParams } from '../../api/priceApiClient';
 import {
   mockPriceCheckData,
   mockListingInfo,
@@ -13,17 +13,13 @@ import {
 } from './utils/mockData';
 import { useModeContext } from '@/context/ModeContext';
 
-// Maximum number of automatic retries
 const MAX_RETRIES = 2;
 
 export function usePriceCheck(isPremium: boolean) {
   const [state, setState] = useState<PriceCheckState>({
     loading: false,
     priceData: null,
-    listingInfo: {
-      title: '',
-      currentPrice: 0
-    },
+    listingInfo: { title: '', currentPrice: 0 },
     loadingListingInfo: true,
     retryCount: 0,
     testMode: false,
@@ -35,15 +31,12 @@ export function usePriceCheck(isPremium: boolean) {
   useEffect(() => {
     async function fetchListingInfo() {
       setState(prev => ({ ...prev, loadingListingInfo: true }));
-
       try {
         const listingData = await getCurrentListing();
-
+        console.log('Raw listing data from getCurrentListing:', listingData); // Debug log
         if (listingData && listingData.title && listingData.price !== undefined) {
-          console.log('Listing data received:', listingData);
-
+          console.log('Listing data valid, testMode: false');
           const safePrice = Math.max(listingData.price || 0, 0.01);
-
           const listingInfo: ListingInfo = {
             title: listingData.title || '',
             currentPrice: safePrice,
@@ -57,7 +50,6 @@ export function usePriceCheck(isPremium: boolean) {
             itemSpecifics: listingData.itemSpecifics,
             itemId: listingData.itemId
           };
-
           setState(prev => ({
             ...prev,
             listingInfo,
@@ -65,15 +57,12 @@ export function usePriceCheck(isPremium: boolean) {
             testMode: false
           }));
         } else {
-          console.log('No listing data available, entering test mode');
-
+          console.log('No valid listing data, entering test mode');
           const mockData = isAuctionMode ? mockAuctionListingInfo : mockListingInfo;
-
           const safeMockData = {
             ...mockData,
             currentPrice: Math.max(mockData.currentPrice, 0.01)
           };
-
           setState(prev => ({
             ...prev,
             listingInfo: safeMockData,
@@ -83,14 +72,11 @@ export function usePriceCheck(isPremium: boolean) {
         }
       } catch (error) {
         console.error('Error fetching listing info:', error);
-
         const mockData = isAuctionMode ? mockAuctionListingInfo : mockListingInfo;
-
         const safeMockData = {
           ...mockData,
           currentPrice: Math.max(mockData.currentPrice, 0.01)
         };
-
         setState(prev => ({
           ...prev,
           listingInfo: safeMockData,
@@ -100,16 +86,14 @@ export function usePriceCheck(isPremium: boolean) {
         }));
       }
     }
-
     fetchListingInfo();
   }, [isAuctionMode]);
 
   const handleCheckPrice = async () => {
     if (state.loading) return;
-
     setState(prev => ({ ...prev, loading: true, error: null }));
-
     try {
+      console.log('handleCheckPrice called, testMode:', state.testMode); // Debug log
       if (state.testMode) {
         console.log('Test mode: Using mock price data');
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -132,14 +116,11 @@ export function usePriceCheck(isPremium: boolean) {
         }));
         return mockDataAdjusted;
       }
-
       const { title, itemSpecifics, condition } = state.listingInfo;
       const { searchTerm, model, brand } = extractItemSearchParams({ itemName: title, itemSpecifics, condition });
-
       console.log('Checking price with parameters:', {
         searchTerm, model, brand, condition, isPremium
       });
-
       const priceData = await getPriceCheck({
         itemName: searchTerm,
         model,
@@ -147,7 +128,7 @@ export function usePriceCheck(isPremium: boolean) {
         condition,
         premium: isPremium
       });
-
+      console.log('Price check response:', priceData);
       setState(prev => ({
         ...prev,
         loading: false,
@@ -155,12 +136,10 @@ export function usePriceCheck(isPremium: boolean) {
         error: priceData.error || (priceData.itemCount === 0 ? 'No items found for the given criteria' : null),
         retryCount: priceData.error || priceData.itemCount === 0 ? prev.retryCount + 1 : 0
       }));
-
       if (priceData.error && state.retryCount < MAX_RETRIES) {
         console.log(`Retry ${state.retryCount + 1}/${MAX_RETRIES}: Simplifying search terms`);
         setTimeout(() => { handleCheckPrice(); }, 1000);
       }
-
       return priceData;
     } catch (error) {
       console.error('Error in price check:', error);
