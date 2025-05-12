@@ -22,7 +22,6 @@ async function getEbayOAuthToken() {
     }
 
     console.log('Fetching new eBay OAuth token');
-    // Use string concatenation instead of template literal
     const credentials = Buffer.from(clientId + ':' + clientSecret).toString('base64');
     const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
       method: 'POST',
@@ -52,7 +51,110 @@ async function getEbayOAuthToken() {
   }
 }
 
-// ... (rest of the file unchanged, ensure no other template literals use `$`)
+function mapConditionToEbayFormat(condition) {
+  if (!condition) return '';
+
+  const conditionMap = {
+    'NEW': 'NEW',
+    'USED': 'USED',
+    'USED_EXCELLENT': 'USED_EXCELLENT',
+    'USED_VERY_GOOD': 'USED_VERY_GOOD',
+    'USED_GOOD': 'USED_GOOD',
+    'USED_ACCEPTABLE': 'USED_ACCEPTABLE',
+    'REFURBISHED': 'REFURBISHED',
+    'SELLER_REFURBISHED': 'SELLER_REFURBISHED',
+    'CERTIFIED_REFURBISHED': 'CERTIFIED_REFURBISHED',
+    'MANUFACTURER_REFURBISHED': 'MANUFACTURER_REFURBISHED',
+    'FOR_PARTS': 'FOR_PARTS_OR_NOT_WORKING',
+    'FOR_PARTS_OR_NOT_WORKING': 'FOR_PARTS_OR_NOT_WORKING',
+    'DAMAGED': 'FOR_PARTS_OR_NOT_WORKING'
+  };
+
+  const upperCondition = condition.toUpperCase();
+  return conditionMap[upperCondition] || upperCondition;
+}
+
+function buildConditionFilter(condition) {
+  if (!condition) return '';
+
+  if (condition === 'USED') {
+    return 'conditionIds:{2000|2010|2020|2030|2500}';
+  }
+
+  return 'conditions:{' + condition + '}';
+}
+
+async function makeEbayApiCall(params) {
+  const { itemName, model, brand, condition } = params;
+  const accessToken = await getEbayOAuthToken();
+
+  let url = 'https://api.ebay.com/buy/browse/v1/item_summary/search?q=' + encodeURIComponent(itemName) + '&category_ids=9355&limit=50';
+
+  if (model) url += '&filter=model:' + encodeURIComponent(model);
+  if (brand) url += '&filter=brand:' + encodeURIComponent(brand);
+
+  if (condition) {
+    const ebayCondition = mapConditionToEbayFormat(condition);
+    const conditionFilter = buildConditionFilter(ebayCondition);
+    url += '&filter=' + conditionFilter;
+    console.log('Using condition filter: ' + conditionFilter);
+  }
+
+  console.log('Calling eBay Buy API with URL: ' + url);
+
+  const ebayResponse = await fetch(url, {
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'X-EBAY-API-SITEID': '0',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+  });
+
+  if (!ebayResponse.ok) {
+    const errorText = await ebayResponse.text();
+    console.error('eBay API error: Status=' + ebayResponse.status + ', Response=' + errorText);
+    if (ebayResponse.status === 401) {
+      throw new Error('Unauthorized: Invalid or expired eBay API token - ' + errorText);
+    }
+    throw new Error('eBay API error: ' + ebayResponse.status + ' - ' + errorText);
+  }
+
+  const ebayData = await ebayResponse.json();
+  if (ebayData.warnings) {
+    console.warn('eBay API warnings:', ebayData.warnings);
+  }
+
+  const items = ebayData.itemSummaries || [];
+
+  if (items.length > 0) {
+    console.log('Found ' + items.length + ' items. Sample conditions:');
+    items.slice(0, 5).forEach((item, i) => {
+      console.log('Item ' + (i + 1) + ': ' + (item.condition || 'No condition') + ' - ' + (item.price?.value || 'No price'));
+    });
+  } else {
+    console.log('No items found with the current filter criteria');
+  }
+
+  const prices = items
+    .map(item => parseFloat(item.price?.value) || 0)
+    .filter(price => price > 0);
+
+  return {
+    averagePrice: prices.length > 0 ? prices.reduce((sum, p) => sum + p, 0) / prices.length : 0,
+    priceHistory: items.map(item => ({
+      date: item.lastSoldDate || new Date().toISOString(),
+      price: parseFloat(item.price?.value) || 0
+    })),
+    sampleSize: prices.length,
+    dateRange: prices.length > 0
+      ? new Date(items[items.length - 1].lastSoldDate || new Date()).toLocaleDateString() + ' - ' + new Date().toISOString().split('T')[0]
+      : null,
+    source: 'eBay Browse API',
+    itemCount: items.length,
+    timestamp: new Date().toISOString()
+  };
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
