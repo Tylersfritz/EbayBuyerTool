@@ -1,3 +1,4 @@
+
 {
   "version": 2,
   "builds": [
@@ -28,15 +29,5 @@
         { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" }
       ]
     }
-  ],
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs18.x",
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "engines": {
-    "node": "18.x"
-  }
+  ]
 }
