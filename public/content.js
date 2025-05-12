@@ -1,6 +1,6 @@
+// public/content.js
 console.log('DealHavenAI Extension loaded');
 
-// Import browser polyfill if available
 try {
   if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     var browser = chrome;
@@ -9,19 +9,14 @@ try {
   console.error('Browser API initialization error:', e);
 }
 
-// Use either browser or chrome API
 const api = typeof browser !== 'undefined' ? browser : chrome;
 
-// Check if we're on an eBay listing page
 if (window.location.href.includes('ebay.com/itm/')) {
-  // Send message to the extension that we're on a valid page
   api.runtime.sendMessage({ action: 'onEbayListing' });
 
-  // Listen for messages from the extension popup
   api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'getListingInfo') {
       try {
-        // Extract item ID from URL
         const itemIdMatch = window.location.href.match(/\/(\d+)\?/) || window.location.href.match(/\/(\d+)$/);
         const itemId = itemIdMatch ? itemIdMatch[1] : '';
         console.log(`Extracting data for eBay item: ${itemId}`);
@@ -32,7 +27,8 @@ if (window.location.href.includes('ebay.com/itm/')) {
           'h1.x-item-title__mainTitle span',
           'h1 span.ux-textspans--BOLD',
           'h1.item-title span',
-          'h1[itemprop="name"]'
+          'h1[itemprop="name"]',
+          '.x-item-title'
         ];
         for (const selector of titleSelectors) {
           const element = document.querySelector(selector);
@@ -57,17 +53,21 @@ if (window.location.href.includes('ebay.com/itm/')) {
           'span#prcIsum_bidPrice',
           '[data-testid="x-price-primary"]',
           'div[data-testid="x-bin-price"] span.ux-textspans',
-          'div[data-testid="x-price"] span'
+          'div[data-testid="x-price"] span',
+          '.x-price-section span'
         ];
         for (const selector of priceSelectors) {
           const element = document.querySelector(selector);
           if (element && element.textContent.trim()) {
             priceText = element.textContent.trim();
-            console.log(`Price found with selector: ${selector}`);
-            const priceMatch = priceText.match(/[\d,.]+/);
+            console.log(`Price found with selector: ${selector}, raw text: ${priceText}`);
+            const priceMatch = priceText.match(/\d{1,3}(,\d{3})*(\.\d{2})?/);
             price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : 0;
             break;
           }
+        }
+        if (price === 0) {
+          console.warn('Price extraction failed, defaulting to 0');
         }
 
         // --- Seller information ---
@@ -151,7 +151,7 @@ if (window.location.href.includes('ebay.com/itm/')) {
               }
             });
           } else {
-            const itemRows = detailsSection.querySelectorAll('div.ux-layout-section__row');
+            const itemRows = detailsSection.querySelectorAll('div.ux-labels-values__row');
             itemRows.forEach(row => {
               const labelEl = row.querySelector('.ux-labels-values__labels');
               const valueEl = row.querySelector('.ux-labels-values__values');
