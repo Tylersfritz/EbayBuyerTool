@@ -5,7 +5,7 @@ import { shouldUseAuctionMockData } from '@/utils/mock/mockModeUtils';
 import { getPriceCheck } from '@/api/priceApiService';
 import { ListingInfo, PriceCheckState } from './types/priceCheckTypes';
 import { PriceCheckResponse } from '@/api/priceApiService';
-import { extractItemSearchParams } from '@/api/priceApiService';
+import { extractItemSearchParams } from '@/api/priceApiClient';
 import { 
   mockPriceCheckData, 
   mockListingInfo, 
