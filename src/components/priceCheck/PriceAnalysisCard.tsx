@@ -185,6 +185,20 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="text-xs">Based on {priceData.itemCount} sold items</p>
+                    <p className="text-xs">Price range: {priceData.priceRange ? `${formatPrice(priceData.priceRange.min)} - ${formatPrice(priceData.priceRange.max)}` : 'N/A'}</p>
+                    {priceData.warning && (
+                      <p className="text-xs text-yellow-600">{priceData.warning}</p>
+                    )}
+                    {priceData.conditionAnalysis && priceData.conditionAnalysis.length > 0 && (
+                      <>
+                        <p className="text-xs font-semibold mt-1">Condition Analysis:</p>
+                        {priceData.conditionAnalysis.map((cond) => (
+                          <p key={cond.condition} className="text-xs">
+                            {cond.condition}: {formatPrice(cond.averagePrice)} ({cond.itemCount} items)
+                          </p>
+                        ))}
+                      </>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -193,7 +207,7 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  console.log('Check Market Rate button clicked');
+                  console.log('Check Market Rate button clicked, priceData:', priceData);
                   onCheckPrice();
                 }}
                 className="h-6 px-2 py-0 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
