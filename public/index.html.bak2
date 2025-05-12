@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DealHavenAI - Smart tools for buyers with price checks, negotiation assistance, and more" />
+    <meta property="og:title" content="DealHavenAI" />
+    <meta property="og:description" content="Smart tools for buyers with price checks, negotiation assistance, and more" />
+    <meta property="og:url" content="https://www.dealhavenai.com" />
+    <title>DealHavenAI | Smart Shopping Assistant</title>
+    <!-- <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script> -->
+    <script type="text/javascript" src="../browser-polyfill.min.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

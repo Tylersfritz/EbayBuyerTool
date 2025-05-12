@@ -1,0 +1,8 @@
+
+project_id = "csipbbnhzcimujaghzbk"
+
+[functions.schedule-snipe]
+verify_jwt = true
+
+[functions.arbitrage-search]
+verify_jwt = true

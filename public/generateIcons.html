@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate DealHaven Extension Icons</title>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .icons-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .icon-preview {
+      border: 1px solid #e2e8f0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      text-align: center;
+    }
+    .icon-preview h3 {
+      margin-top: 0;
+    }
+    .icon-preview img {
+      margin: 1rem 0;
+    }
+    .icon-preview .download {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #1EAEDB;
+      color: white;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+    }
+    .generate-button {
+      padding: 0.5rem 1rem;
+      background: #1EAEDB;
+      color: white;
+      border: none;
+      border-radius: 0.25rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .instructions {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin: 2rem 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>DealHavenAI Icon Generator</h1>
+  <p>This utility generates the necessary icons for the Chrome extension in standard and active states.</p>
+  
+  <div class="instructions">
+    <h2>Instructions:</h2>
+    <ol>
+      <li>Click the "Generate Icons" button below</li>
+      <li>Download each icon using the download buttons</li>
+      <li>Move the icons to the <code>/public</code> directory of your project</li>
+      <li>Ensure the icon filenames match those referenced in the manifest.json</li>
+    </ol>
+  </div>
+  
+  <button id="generateBtn" class="generate-button">Generate Icons</button>
+  
+  <div id="iconsContainer" class="icons-container"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const generateBtn = document.getElementById('generateBtn');
+      const iconsContainer = document.getElementById('iconsContainer');
+      
+      generateBtn.addEventListener('click', function() {
+        iconsContainer.innerHTML = '';
+        generateIcons();
+      });
+      
+      function generateIcons() {
+        // Standard icons
+        generateIcon(16, 'icon-16.png', false);
+        generateIcon(48, 'icon-48.png', false);
+        generateIcon(128, 'icon-128.png', false);
+        
+        // Active icons
+        generateIcon(16, 'icon-16-active.png', true);
+        generateIcon(48, 'icon-48-active.png', true);
+        generateIcon(128, 'icon-128-active.png', true);
+      }
+      
+      function generateIcon(size, filename, isActive) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          // Base color
+          const baseColor = isActive ? '#34D399' : '#1EAEDB';
+          
+          // Draw shield background
+          ctx.fillStyle = baseColor;
+          const centerX = size / 2;
+          const shieldWidth = size * 0.8;
+          const shieldTop = size * 0.1;
+          const shieldBottom = size * 0.9;
+          
+          // Shield shape
+          ctx.beginPath();
+          ctx.moveTo(centerX, shieldTop);
+          ctx.lineTo(centerX + shieldWidth/2, shieldTop + size * 0.15);
+          ctx.lineTo(centerX + shieldWidth/2, size * 0.6);
+          ctx.arcTo(centerX + shieldWidth/2, shieldBottom, centerX, shieldBottom, shieldWidth/2);
+          ctx.arcTo(centerX - shieldWidth/2, shieldBottom, centerX - shieldWidth/2, size * 0.6, shieldWidth/2);
+          ctx.lineTo(centerX - shieldWidth/2, shieldTop + size * 0.15);
+          ctx.closePath();
+          ctx.fill();
+          
+          // Add highlight shine
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.beginPath();
+          ctx.moveTo(centerX, shieldTop + size * 0.05);
+          ctx.lineTo(centerX + shieldWidth * 0.4, shieldTop + size * 0.15);
+          ctx.lineTo(centerX + shieldWidth * 0.3, shieldTop + size * 0.25);
+          ctx.lineTo(centerX, shieldTop + size * 0.2);
+          ctx.lineTo(centerX - shieldWidth * 0.3, shieldTop + size * 0.25);
+          ctx.lineTo(centerX - shieldWidth * 0.4, shieldTop + size * 0.15);
+          ctx.closePath();
+          ctx.fill();
+          
+          // Draw text or symbols
+          ctx.fillStyle = 'white';
+          ctx.font = `bold ${size * 0.3}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          if (size > 32) {
+            // For larger icons, draw more detailed content
+            ctx.fillText('DH', centerX, centerX + size * 0.1);
+            
+            if (isActive) {
+              // Add checkmark for active icons
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = size * 0.05;
+              ctx.beginPath();
+              ctx.moveTo(centerX - size * 0.2, centerX - size * 0.1);
+              ctx.lineTo(centerX, centerX + size * 0.1);
+              ctx.lineTo(centerX + size * 0.25, centerX - size * 0.15);
+              ctx.stroke();
+            }
+          } else {
+            // For smaller icons, just use simple text
+            ctx.fillText(isActive ? '✓' : 'DH', centerX, centerX);
+          }
+        }
+        
+        // Create preview container
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'icon-preview';
+        
+        // Add heading with filename
+        const heading = document.createElement('h3');
+        heading.textContent = filename;
+        previewContainer.appendChild(heading);
+        
+        // Add icon preview
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL();
+        img.alt = filename;
+        img.style.width = `${size}px`;
+        img.style.height = `${size}px`;
+        previewContainer.appendChild(img);
+        
+        // Add download button
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'download';
+        downloadBtn.textContent = 'Download';
+        downloadBtn.addEventListener('click', function() {
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+        previewContainer.appendChild(downloadBtn);
+        
+        // Add to container
+        iconsContainer.appendChild(previewContainer);
+      }
+    });
+  </script>
+</body>
+</html>
