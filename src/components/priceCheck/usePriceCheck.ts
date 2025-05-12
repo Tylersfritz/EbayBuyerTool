@@ -29,11 +29,13 @@ export function usePriceCheck(isPremium: boolean) {
   const { isAuctionMode } = useModeContext();
 
   useEffect(() => {
+    console.log('usePriceCheck useEffect triggered, isAuctionMode:', isAuctionMode);
     async function fetchListingInfo() {
+      console.log('fetchListingInfo called');
       setState(prev => ({ ...prev, loadingListingInfo: true }));
       try {
         const listingData = await getCurrentListing();
-        console.log('Raw listing data from getCurrentListing:', listingData); // Debug log
+        console.log('Raw listing data from getCurrentListing:', JSON.stringify(listingData, null, 2));
         if (listingData && listingData.title && listingData.price !== undefined) {
           console.log('Listing data valid, testMode: false');
           const safePrice = Math.max(listingData.price || 0, 0.01);
@@ -90,10 +92,15 @@ export function usePriceCheck(isPremium: boolean) {
   }, [isAuctionMode]);
 
   const handleCheckPrice = async () => {
-    if (state.loading) return;
+    console.log('handleCheckPrice invoked');
+    if (state.loading) {
+      console.log('handleCheckPrice aborted: already loading');
+      return;
+    }
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      console.log('handleCheckPrice called, testMode:', state.testMode); // Debug log
+      console.log('handleCheckPrice called, testMode:', state.testMode);
+      console.log('Current state:', JSON.stringify(state, null, 2));
       if (state.testMode) {
         console.log('Test mode: Using mock price data');
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -108,7 +115,7 @@ export function usePriceCheck(isPremium: boolean) {
           timestamp: new Date().toISOString(),
           priceHistory: [{ date: '2025-05-10', price: listingPrice * 0.95 }]
         };
-        console.log('Mock price data:', mockDataAdjusted);
+        console.log('Mock price data:', JSON.stringify(mockDataAdjusted, null, 2));
         setState(prev => ({
           ...prev,
           loading: false,
@@ -118,9 +125,7 @@ export function usePriceCheck(isPremium: boolean) {
       }
       const { title, itemSpecifics, condition } = state.listingInfo;
       const { searchTerm, model, brand } = extractItemSearchParams({ itemName: title, itemSpecifics, condition });
-      console.log('Checking price with parameters:', {
-        searchTerm, model, brand, condition, isPremium
-      });
+      console.log('Checking price with parameters:', JSON.stringify({ searchTerm, model, brand, condition, isPremium }, null, 2));
       const priceData = await getPriceCheck({
         itemName: searchTerm,
         model,
@@ -128,7 +133,7 @@ export function usePriceCheck(isPremium: boolean) {
         condition,
         premium: isPremium
       });
-      console.log('Price check response:', priceData);
+      console.log('Price check response:', JSON.stringify(priceData, null, 2));
       setState(prev => ({
         ...prev,
         loading: false,
