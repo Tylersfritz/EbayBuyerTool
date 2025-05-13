@@ -29,7 +29,7 @@ interface PriceCheckApiOptions {
 }
 
 // Use the actual Vercel deployment URL
-const VERCEL_DEPLOYMENT_URL = "https://ebay-buyer-tool.vercel.app";
+const VERCEL_DEPLOYMENT_URL = "https://ebay-buyer-tool-zp52.vercel.app";
 
 // API base URL derived from the deployment URL
 const API_BASE_URL = `${VERCEL_DEPLOYMENT_URL}/api/price-check`;
