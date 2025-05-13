@@ -16,6 +16,7 @@ export interface PriceCheckResponse {
   source?: string;
   conditionAnalysis?: { condition: string; averagePrice: number; itemCount: number }[];
   error?: string;
+  warning?: string;
 }
 
 /**
@@ -97,6 +98,8 @@ function standardizeConditionValue(condition?: string): string {
     return 'FOR_PARTS_OR_NOT_WORKING';
   } else if (upperCondition.includes('USED')) {
     return 'USED';
+  } else if (upperCondition.includes('GRADED')) {
+    return 'USED'; // Handle graded items like Pokemon cards
   }
 
   // Default to USED for unrecognized conditions
@@ -107,9 +110,6 @@ function standardizeConditionValue(condition?: string): string {
  * Extracts specific search parameters from listing data for price check API queries.
  * Parses itemName and itemSpecifics to include attributes like storage, color, model, and condition.
  * Ensures item-specific queries to avoid generic results.
- *
- * @param {PriceCheckApiOptions} options - Input parameters from getCurrentListing
- * @returns {Object} - Search parameters for API query
  */
 export function extractItemSearchParams(options: PriceCheckApiOptions): {
   model: string;
@@ -124,7 +124,7 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
   // Log input parameters for debugging
   console.log('extractItemSearchParams input:', { itemName, itemSpecifics: specs, condition: conditionInput });
 
-  // Normalize itemName (remove extra spaces, convert to string)
+  // Normalize itemName
   const normalizedItemName = itemName.trim().replace(/\s+/g, ' ');
 
   // Extract storage (e.g., "64GB", "256GB", "1TB")
@@ -132,7 +132,7 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
                       specs['Storage']?.match(/\b(\d{1,3}\s?(GB|TB))\b/i);
   const storage = storageMatch ? storageMatch[1].replace(/\s/g, '') : '';
 
-  // Extract color (common iPhone colors and other devices)
+  // Extract color
   const colorRegex = /\b(Black|White|Red|Blue|Green|Gold|Silver|Graphite|Pink|Midnight|Starlight|Alpine|Purple|Sierra Blue|Pacific Blue|Space Gray|Rose Gold|Yellow|Coral|Jet Black)\b/i;
   const colorMatch = normalizedItemName.match(colorRegex) ||
                     specs['Color']?.match(colorRegex);
@@ -142,11 +142,13 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
   let model = specs['Model'] || '';
   if (!model && normalizedItemName) {
     const modelPatterns = [
-      /\b(iphone \d+(?:\s?(?:pro\s?max|pro|plus|mini))?)\b/i, // iPhone models
-      /\b(galaxy (?:s|note|a|z)?\d+(?:\s?(?:ultra|plus|fe))?)\b/i, // Samsung Galaxy
-      /\b(macbook (?:pro|air)?\s?\d+(?:\.\d+)?(?:\s?inch)?)\b/i, // MacBook
-      /\b(ps\d+|playstation\s?\d+)\b/i, // PlayStation
-      /\b(xbox\s?(?:one|series\s?[xs])?)\b/i // Xbox
+      /\b(iphone \d+(?:\s?(?:pro\s?max|pro|plus|mini))?)\b/i,
+      /\b(galaxy (?:s|note|a|z)?\d+(?:\s?(?:ultra|plus|fe))?)\b/i,
+      /\b(macbook (?:pro|air)?\s?\d+(?:\.\d+)?(?:\s?inch)?)\b/i,
+      /\b(ps\d+|playstation\s?\d+)\b/i,
+      /\b(xbox\s?(?:one|series\s?[xs])?)\b/i,
+      /\b(fitbit\s\w+(?:\s\d)?)\b/i, // Fitbit models
+      /\b(pokemon\s\w+)\b/i // Pokemon cards
     ];
     for (const pattern of modelPatterns) {
       const match = normalizedItemName.match(pattern);
@@ -163,7 +165,8 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
     const commonBrands = [
       'Apple', 'Samsung', 'Sony', 'Microsoft', 'Google', 'LG',
       'Lenovo', 'Dell', 'HP', 'Asus', 'Acer', 'Toshiba', 'Huawei',
-      'Nintendo', 'Dyson', 'Bose', 'JBL', 'Logitech', 'Canon', 'Nikon'
+      'Nintendo', 'Dyson', 'Bose', 'JBL', 'Logitech', 'Canon', 'Nikon',
+      'Fitbit', 'Pokemon'
     ];
     for (const brandName of commonBrands) {
       if (normalizedItemName.toLowerCase().includes(brandName.toLowerCase())) {
@@ -172,10 +175,10 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
       }
     }
   }
-  brand = brand || 'Apple'; // Default to Apple for iPhone context
+  brand = brand || ''; // No default to Apple
 
-  // Standardize condition for API compatibility
-  const condition = standardizeConditionValue(conditionInput);
+  // Standardize condition
+  const condition = standardizeConditionValue(conditionInput) || 'USED';
 
   // Build search term with specific attributes
   const searchTermParts = [
@@ -183,9 +186,9 @@ export function extractItemSearchParams(options: PriceCheckApiOptions): {
     model,
     storage,
     color,
-    condition.replace(/_/g, ' ').toLowerCase(), // Convert "USED_EXCELLENT" to "used excellent"
-    simplifyItemName(normalizedItemName).split(' ').slice(0, 3).join(' ') // Include first 3 words of simplified name
-  ].filter(Boolean); // Remove empty strings
+    condition.replace(/_/g, ' ').toLowerCase(),
+    simplifyItemName(normalizedItemName).split(' ').slice(0, 3).join(' ')
+  ].filter(Boolean);
   const searchTerm = searchTermParts.join(' ').trim();
 
   // Ensure searchTerm is not empty
