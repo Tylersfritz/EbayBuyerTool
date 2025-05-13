@@ -1,4 +1,3 @@
-
 {
   "manifest_version": 3,
   "name": "DealHavenAI",
@@ -38,6 +37,22 @@
     {
       "matches": ["https://*.mercari.com/item/*"],
       "js": ["browser-polyfill.min.js", "mercari-content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "placeholder.svg",
+        "icon-16.png",
+        "icon-48.png",
+        "icon-128.png",
+        "icon-16-active.png",
+        "icon-48-active.png",
+        "icon-128-active.png",
+        "favicon.ico",
+        "browser-polyfill.min.js"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }
