@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     // Debug: Log the token (first 10 characters for safety)
     console.log(`Using token: ${token.substring(0, 10)}...`);
 
-    // Call the Market Insights API
+    // Call the Market Insights API with the required header
     const response = await fetch(
       `https://api.sandbox.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?q=${encodeURIComponent(itemName)}&condition=${condition}`,
       {
@@ -21,6 +21,7 @@ module.exports = async (req, res) => {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-EBAY-C-MARKETPLACE-ID": "EBAY_US" // Add the required header
         },
       }
     );
