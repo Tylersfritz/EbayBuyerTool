@@ -40,3 +40,5 @@ vite.config.ts.bak
 config.json
 n
 !api/*.js
+curl 
+test-token.js 
