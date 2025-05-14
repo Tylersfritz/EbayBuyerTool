@@ -50,31 +50,30 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
       const specifics: Record<string, string> = {};
       try {
         console.log('Attempting to extract Item Specifics from DOM...');
-        // Try multiple selectors for eBay's Item Specifics section
-        const specificsSection = document.querySelector('#viTabs_0_is .section') || 
-                                document.querySelector('.ux-layout-section__item--table-view') ||
-                                document.querySelector('.itemAttr') ||
-                                document.querySelector('.ux-labels-values');
-        console.log('Specifics Section Element:', specificsSection ? specificsSection.outerHTML : 'Not found');
+        // Try a more generic approach to find Item Specifics
+        const labels = document.querySelectorAll('[class*="label"], [class*="title"], [id*="lbl"], [class*="attr"], [class*="ux-label"]');
+        console.log(`Found ${labels.length} potential label elements`);
 
-        if (specificsSection) {
-          const rows = specificsSection.querySelectorAll('tr') || 
-                      specificsSection.querySelectorAll('.ux-labels-values__row') ||
-                      specificsSection.querySelectorAll('div');
-          console.log(`Found ${rows.length} rows in specifics section`);
+        labels.forEach((labelElement, index) => {
+          const labelText = labelElement.textContent?.trim().toLowerCase().replace(':', '');
+          const parent = labelElement.parentElement;
+          const valueElement = parent?.querySelector('td:not([class*="label"]), span:not([class*="label"]), div:not([class*="label"])');
+          const value = valueElement?.textContent?.trim();
 
-          rows.forEach((row, index) => {
-            const labelElement = row.querySelector('.attrLabels, .ux-labels-values__labels');
-            const valueElement = row.querySelector('td:not(.attrLabels), .ux-labels-values__values');
-            const label = labelElement?.textContent?.trim().replace(':', '');
-            const value = valueElement?.textContent?.trim();
-            console.log(`Row ${index}: Label=${label}, Value=${value}`);
-            if (label && value) {
-              specifics[label] = value;
+          console.log(`Label ${index}: Text=${labelText}, Value=${value}`);
+          if (labelText && value) {
+            if (labelText.includes('brand') || labelText.includes('make')) {
+              specifics['Brand'] = value;
+            } else if (labelText.includes('model')) {
+              specifics['Model'] = value;
+            } else if (labelText.includes('condition')) {
+              specifics['Condition'] = value;
             }
-          });
-        } else {
-          console.log('No specifics section found with any selector');
+          }
+        });
+
+        if (Object.keys(specifics).length === 0) {
+          console.log('No specifics found with generic selectors');
         }
       } catch (error) {
         console.error('Error extracting Item Specifics from DOM:', error);
@@ -86,19 +85,24 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     const observeDOMForSpecifics = (callback: () => void) => {
       const targetNode = document.body;
       const observer = new MutationObserver((mutations, observer) => {
-        console.log('DOM changed, checking for specifics section...');
-        const specificsSection = document.querySelector('#viTabs_0_is .section') || 
-                                document.querySelector('.ux-layout-section__item--table-view') ||
-                                document.querySelector('.itemAttr') ||
-                                document.querySelector('.ux-labels-values');
-        if (specificsSection) {
-          console.log('Specifics section detected via MutationObserver');
+        console.log('DOM changed, checking for specifics...');
+        const labels = document.querySelectorAll('[class*="label"], [class*="title"], [id*="lbl"], [class*="attr"], [class*="ux-label"]');
+        if (labels.length > 0) {
+          console.log('Specifics labels detected via MutationObserver');
           observer.disconnect(); // Stop observing once found
           callback();
         }
       });
 
       observer.observe(targetNode, { childList: true, subtree: true });
+
+      // Timeout to stop observing after 10 seconds
+      setTimeout(() => {
+        observer.disconnect();
+        console.log('MutationObserver timed out after 10 seconds');
+        callback(); // Proceed even if specifics not found
+      }, 10000);
+
       return observer;
     };
 
@@ -141,7 +145,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
       // Extract relevant specifics for the API call
       let make = extractedSpecifics['Brand'] || extractedSpecifics['Make'] || listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
       let model = extractedSpecifics['Model'] || listingInfo.itemSpecifics?.['Model'] || '';
-      let condition = listingInfo.condition || 'USED'; // Default to USED if not provided
+      let condition = extractedSpecifics['Condition'] || listingInfo.condition || 'USED'; // Default to USED if not provided
       const itemName = listingInfo.title || '';
 
       // Clean condition value (remove duplication like "UsedUsed")
@@ -327,206 +331,206 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                           ((listingInfo.originalPrice - listingInfo.currentPrice) / listingInfo.originalPrice * 100))}%
                       </Badge>
                     </div>
-                  </div>
-                )}
-                
-                {listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-gray-600">Quantity:</span>
-                    <span className="text-xs font-medium">
-                      {listingInfo.quantityAvailable} available
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
-            
-            {listingInfo.isAuction && (
-              <>
+                </div>
+              )}
+              
+              {listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-600 flex items-center">
-                    <Gavel className="h-3 w-3 mr-1 text-amber-500" />
-                    Current bid:
-                  </span>
-                  <span className={cn(
-                    "font-semibold text-sm",
-                    isPriceBelowMarket ? "text-green-600" : "text-gray-900"
-                  )}>
-                    {formatPrice(listingInfo.currentPrice)}
+                  <span className="text-xs font-medium text-gray-600">Quantity:</span>
+                  <span className="text-xs font-medium">
+                    {listingInfo.quantityAvailable} available
                   </span>
                 </div>
-                
-                {listingInfo.buyItNowPrice && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-gray-600 flex items-center">
-                      <TagIcon className="h-3 w-3 mr-1 text-blue-500" />
-                      Buy It Now:
-                    </span>
-                    <span className="text-xs font-medium">
-                      {formatPrice(listingInfo.buyItNowPrice)}
-                    </span>
-                  </div>
-                )}
-                
+              )}
+            </>
+          )}
+          
+          {listingInfo.isAuction && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-gray-600 flex items-center">
+                  <Gavel className="h-3 w-3 mr-1 text-amber-500" />
+                  Current bid:
+                </span>
+                <span className={cn(
+                  "font-semibold text-sm",
+                  isPriceBelowMarket ? "text-green-600" : "text-gray-900"
+                )}>
+                  {formatPrice(listingInfo.currentPrice)}
+                </span>
+              </div>
+              
+              {listingInfo.buyItNowPrice && (
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-600 flex items-center">
-                    <Users className="h-3 w-3 mr-1 text-blue-500" />
-                    Bids:
+                    <TagIcon className="h-3 w-3 mr-1 text-blue-500" />
+                    Buy It Now:
                   </span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium">
-                            {listingInfo.bids || 0}
+                  <span className="text-xs font-medium">
+                    {formatPrice(listingInfo.buyItNowPrice)}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-gray-600 flex items-center">
+                  <Users className="h-3 w-3 mr-1 text-blue-500" />
+                  Bids:
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center">
+                        <span className="text-xs font-medium">
+                          {listingInfo.bids || 0}
+                        </span>
+                        {listingInfo.bidderCount && listingInfo.bidderCount > 0 && (
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({listingInfo.bidderCount} bidders)
                           </span>
-                          {listingInfo.bidderCount && listingInfo.bidderCount > 0 && (
-                            <span className="text-xs text-gray-500 ml-1">
-                              ({listingInfo.bidderCount} bidders)
-                            </span>
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p className="text-xs">
-                          {listingInfo.bids && listingInfo.bids > 5 
-                            ? "Active auction with multiple bidders" 
-                            : "Low bid count - may be a good opportunity"}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                
-                {listingInfo.timeRemaining && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-600 flex items-center">
-                        <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
-                        Time left:
-                      </span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={`text-xs font-medium ${getTimeColor()}`}>
-                              {listingInfo.timeRemaining}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            <p className="text-xs">{getTimeTooltip()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <div className="mt-1">
-                      <Progress 
-                        value={calculateTimeProgress()} 
-                        className="h-1" 
-                        indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
-                                          calculateTimeProgress() > 60 ? "bg-amber-500" : 
-                                          "bg-blue-500"}
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {listingInfo.watchers && listingInfo.watchers > 0 && (
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="text-xs">
+                        {listingInfo.bids && listingInfo.bids > 5 
+                          ? "Active auction with multiple bidders" 
+                          : "Low bid count - may be a good opportunity"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              {listingInfo.timeRemaining && (
+                <>
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-medium text-gray-600 flex items-center">
-                      <Eye className="h-3 w-3 mr-1 text-blue-500" />
-                      Watchers:
+                      <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
+                      Time left:
                     </span>
-                    <span className="text-xs font-medium">
-                      {listingInfo.watchers}
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            {listingInfo.condition && (
-              <div className="flex justify-between">
-                <span className="text-xs font-medium text-gray-600">Condition:</span>
-                <span className="text-xs">{listingInfo.condition}</span>
-              </div>
-            )}
-            {listingInfo.shipping && (
-              <div className="flex justify-between">
-                <span className="text-xs font-medium text-gray-600">Shipping:</span>
-                <span className="text-xs">{listingInfo.shipping}</span>
-              </div>
-            )}
-            {listingInfo.seller && (
-              <div className="flex justify-between">
-                <span className="text-xs font-medium text-gray-600">Seller:</span>
-                <div className="flex items-center">
-                  <span className="text-xs truncate ml-1 max-w-[60px]">{listingInfo.seller}</span>
-                  {listingInfo.sellerFeedbackScore && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Badge variant="outline" className="ml-1 text-[0.65rem] px-1 py-0 h-4">
-                            {listingInfo.sellerPositivePercentage}%
-                          </Badge>
+                          <span className={`text-xs font-medium ${getTimeColor()}`}>
+                            {listingInfo.timeRemaining}
+                          </span>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p className="text-xs">Feedback score: {listingInfo.sellerFeedbackScore}</p>
+                        <TooltipContent side="right">
+                          <p className="text-xs">{getTimeTooltip()}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  )}
+                  </div>
+                  <div className="mt-1">
+                    <Progress 
+                      value={calculateTimeProgress()} 
+                      className="h-1" 
+                      indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
+                                        calculateTimeProgress() > 60 ? "bg-amber-500" : 
+                                        "bg-blue-500"}
+                    />
+                  </div>
+                </>
+              )}
+              
+              {listingInfo.watchers && listingInfo.watchers > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-gray-600 flex items-center">
+                    <Eye className="h-3 w-3 mr-1 text-blue-500" />
+                    Watchers:
+                  </span>
+                  <span className="text-xs font-medium">
+                    {listingInfo.watchers}
+                  </span>
                 </div>
-              </div>
-            )}
-            {listingInfo.returnPolicy && (
-              <div className="flex justify-between">
-                <span className="text-xs font-medium text-gray-600">Returns:</span>
-                <span className="text-xs">{listingInfo.returnPolicy}</span>
-              </div>
-            )}
-            {listingInfo.isAuction && listingInfo.firstBidTime && (
-              <div className="flex justify-between">
-                <span className="text-xs font-medium text-gray-600">First bid:</span>
-                <span className="text-xs">
-                  {new Date(listingInfo.firstBidTime).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
-        
-        {!listingInfo.isAuction && isOnSale && (
-          <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
-            <p className="text-xs text-green-800 font-medium">
-              This item is on sale! Save {formatPrice(
-                (listingInfo.originalPrice || 0) - listingInfo.currentPrice
-              )} off the original price.
-            </p>
-          </div>
-        )}
-        
-        {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
-          <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
-            <p className="text-xs text-amber-800 font-medium flex items-center">
-              <Clock className="h-3 w-3 mr-1 text-amber-600" />
-              {listingInfo.bids > 5 
-                ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
-                : "Auction has few bids - potential opportunity"}
-            </p>
-          </div>
-        )}
 
-        {marketRate && (
-          <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
-            <p className="text-xs text-blue-800 font-medium">
-              Auction Market Rate: ${marketRate}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <div className="space-y-2">
+          {listingInfo.condition && (
+            <div className="flex justify-between">
+              <span className="text-xs font-medium text-gray-600">Condition:</span>
+              <span className="text-xs">{listingInfo.condition}</span>
+            </div>
+          )}
+          {listingInfo.shipping && (
+            <div className="flex justify-between">
+              <span className="text-xs font-medium text-gray-600">Shipping:</span>
+              <span className="text-xs">{listingInfo.shipping}</span>
+            </div>
+          )}
+          {listingInfo.seller && (
+            <div className="flex justify-between">
+              <span className="text-xs font-medium text-gray-600">Seller:</span>
+              <div className="flex items-center">
+                <span className="text-xs truncate ml-1 max-w-[60px]">{listingInfo.seller}</span>
+                {listingInfo.sellerFeedbackScore && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-1 text-[0.65rem] px-1 py-0 h-4">
+                          {listingInfo.sellerPositivePercentage}%
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p className="text-xs">Feedback score: {listingInfo.sellerFeedbackScore}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+            </div>
+          )}
+          {listingInfo.returnPolicy && (
+            <div className="flex justify-between">
+              <span className="text-xs font-medium text-gray-600">Returns:</span>
+              <span className="text-xs">{listingInfo.returnPolicy}</span>
+            </div>
+          )}
+          {listingInfo.isAuction && listingInfo.firstBidTime && (
+            <div className="flex justify-between">
+              <span className="text-xs font-medium text-gray-600">First bid:</span>
+              <span className="text-xs">
+                {new Date(listingInfo.firstBidTime).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {!listingInfo.isAuction && isOnSale && (
+        <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
+          <p className="text-xs text-green-800 font-medium">
+            This item is on sale! Save {formatPrice(
+              (listingInfo.originalPrice || 0) - listingInfo.currentPrice
+            )} off the original price.
+          </p>
+        </div>
+      )}
+      
+      {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
+        <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
+          <p className="text-xs text-amber-800 font-medium flex items-center">
+            <Clock className="h-3 w-3 mr-1 text-amber-600" />
+            {listingInfo.bids > 5 
+              ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
+              : "Auction has few bids - potential opportunity"}
+          </p>
+        </div>
+      )}
+
+      {marketRate && (
+        <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
+          <p className="text-xs text-blue-800 font-medium">
+            Auction Market Rate: ${marketRate}
+          </p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
   );
 };
 
