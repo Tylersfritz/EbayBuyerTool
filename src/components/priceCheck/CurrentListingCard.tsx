@@ -1,5 +1,5 @@
-
-import React from 'react';
+// currentlistingcard.tsx
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Timer, Gavel, TagIcon, DollarSign, Users, Eye, Info, Clock } from "lucide-react";
@@ -41,6 +41,38 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   listingInfo, 
   loadingListingInfo 
 }) => {
+  const [marketRate, setMarketRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Log the itemSpecifics to confirm available details
+    console.log('Captured Item Specifics:', listingInfo.itemSpecifics);
+
+    // Extract relevant specifics for the API call
+    const make = listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
+    const model = listingInfo.itemSpecifics?.['Model'] || '';
+    const condition = listingInfo.condition || 'USED'; // Default to USED if not provided
+    const itemName = listingInfo.title || '';
+
+    // Call the /api/price-check endpoint with the extracted specifics
+    const fetchMarketRate = async () => {
+      try {
+        const response = await fetch(
+          `/api/price-check?itemName=${encodeURIComponent(itemName)}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&condition=${encodeURIComponent(condition)}&premium=false`
+        );
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        setMarketRate(data.marketRate);
+      } catch (error) {
+        console.error('Error fetching market rate:', error.message);
+        setMarketRate(null);
+      }
+    };
+
+    fetchMarketRate();
+  }, [listingInfo]);
+
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
   };
@@ -55,18 +87,15 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     if (!listingInfo.timeRemaining) return 0;
     
     const timeStr = listingInfo.timeRemaining;
-    // Parse the time string (e.g., "3d 4h 15m")
     const daysMatch = timeStr.match(/(\d+)d/);
     const hoursMatch = timeStr.match(/(\d+)h/);
     
     const days = daysMatch ? parseInt(daysMatch[1]) : 0;
     const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
     
-    // Assume a typical auction is 7 days
     const totalHours = days * 24 + hours;
     const maxHours = 7 * 24;
     
-    // Return progress as percentage (inverted, so lower time = higher progress)
     return Math.min(100, Math.max(0, 100 - (totalHours / maxHours) * 100));
   };
   
@@ -75,10 +104,10 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     if (!listingInfo.timeRemaining) return "text-gray-500";
     
     const progress = calculateTimeProgress();
-    if (progress > 90) return "text-red-600"; // Ending very soon (minutes only)
-    if (progress > 80) return "text-red-500"; // Ending very soon (few hours)
-    if (progress > 60) return "text-amber-500"; // Ending soon
-    return "text-blue-500"; // Plenty of time
+    if (progress > 90) return "text-red-600";
+    if (progress > 80) return "text-red-500";
+    if (progress > 60) return "text-amber-500";
+    return "text-blue-500";
   };
   
   // Generate tooltip text for the auction timing
@@ -109,7 +138,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     );
   }
 
-  // Different border styling based on listing type
   const cardBorderClass = listingInfo.isAuction 
     ? "border-l-4 border-l-amber-500" 
     : "border-l-4 border-l-blue-500";
@@ -152,9 +180,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
         <p className="text-sm font-semibold line-clamp-2">{listingInfo.title}</p>
 
         <div className="grid grid-cols-2 gap-4 mb-2 mt-2">
-          {/* Left column: Current bid and auction info */}
           <div className="space-y-2">
-            {/* Fixed Price Section */}
             {!listingInfo.isAuction && (
               <>
                 <div className="flex justify-between items-center">
@@ -196,7 +222,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
               </>
             )}
             
-            {/* Auction Section */}
             {listingInfo.isAuction && (
               <>
                 <div className="flex justify-between items-center">
@@ -301,7 +326,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
             )}
           </div>
 
-          {/* Right column: Condition and shipping */}
           <div className="space-y-2">
             {listingInfo.condition && (
               <div className="flex justify-between">
@@ -343,7 +367,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                 <span className="text-xs">{listingInfo.returnPolicy}</span>
               </div>
             )}
-            {/* For auction items - show first bid time if available */}
             {listingInfo.isAuction && listingInfo.firstBidTime && (
               <div className="flex justify-between">
                 <span className="text-xs font-medium text-gray-600">First bid:</span>
@@ -355,7 +378,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
           </div>
         </div>
         
-        {/* Indicator for good deals - fixed price */}
         {!listingInfo.isAuction && isOnSale && (
           <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
             <p className="text-xs text-green-800 font-medium">
@@ -366,7 +388,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
           </div>
         )}
         
-        {/* Auction-specific information */}
         {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
           <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
             <p className="text-xs text-amber-800 font-medium flex items-center">
@@ -374,6 +395,15 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
               {listingInfo.bids > 5 
                 ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
                 : "Auction has few bids - potential opportunity"}
+            </p>
+          </div>
+        )}
+
+        {/* Display the market rate if available */}
+        {marketRate && (
+          <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
+            <p className="text-xs text-blue-800 font-medium">
+              Auction Market Rate: ${marketRate}
             </p>
           </div>
         )}
