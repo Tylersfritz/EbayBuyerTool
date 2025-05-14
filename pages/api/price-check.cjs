@@ -25,7 +25,8 @@ module.exports = async (req, res) => {
       });
 
       if (!tokenResponse.ok) {
-        throw new Error(`Failed to fetch eBay token: ${tokenResponse.status}`);
+        const errorText = await tokenResponse.text();
+        throw new Error(`Failed to fetch eBay token: ${tokenResponse.status}, Details: ${errorText}`);
       }
 
       const tokenData = await tokenResponse.json();
@@ -45,7 +46,8 @@ module.exports = async (req, res) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch eBay data: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch eBay data: ${response.status}, Details: ${errorText}`);
     }
 
     const data = await response.json();
