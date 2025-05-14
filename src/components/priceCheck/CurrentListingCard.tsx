@@ -1,4 +1,4 @@
-// currentlistingcard.tsx
+// src/components/priceCheck/CurrentListingCard.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,16 +42,71 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   loadingListingInfo 
 }) => {
   const [marketRate, setMarketRate] = useState<number | null>(null);
+  const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Log the itemSpecifics to confirm available details
-    console.log('Captured Item Specifics:', listingInfo.itemSpecifics);
+    // Function to extract Item Specifics from the DOM
+    const extractItemSpecificsFromDOM = (): Record<string, string> => {
+      const specifics: Record<string, string> = {};
+      try {
+        // Adjust selector based on eBay's actual DOM structure
+        const specificsTable = document.querySelector('.itemAttr table');
+        if (specificsTable) {
+          const rows = specificsTable.querySelectorAll('tr');
+          rows.forEach(row => {
+            const label = row.querySelector('.attrLabels')?.textContent?.trim().replace(':', '');
+            const value = row.querySelector('td:not(.attrLabels)')?.textContent?.trim();
+            if (label && value) {
+              specifics[label] = value;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error extracting Item Specifics from DOM:', error);
+      }
+      return specifics;
+    };
+
+    // Extract and cache Item Specifics
+    const extractedSpecifics = extractItemSpecificsFromDOM();
+    setCachedSpecifics(extractedSpecifics);
+
+    // Log the captured specifics for debugging
+    console.log('Captured Item Specifics from DOM:', extractedSpecifics);
+    console.log('Listing Info from getCurrentListing:', listingInfo);
 
     // Extract relevant specifics for the API call
-    const make = listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
-    const model = listingInfo.itemSpecifics?.['Model'] || '';
-    const condition = listingInfo.condition || 'USED'; // Default to USED if not provided
+    let make = extractedSpecifics['Brand'] || extractedSpecifics['Make'] || listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
+    let model = extractedSpecifics['Model'] || listingInfo.itemSpecifics?.['Model'] || '';
+    let condition = listingInfo.condition || 'USED'; // Default to USED if not provided
     const itemName = listingInfo.title || '';
+
+    // Clean condition value (remove duplication like "UsedUsed")
+    condition = condition.replace(/UsedUsed/, 'USED');
+
+    // Fallback: Derive make and model from title if not found in specifics
+    if (!make || !model) {
+      const titleWords = itemName.toLowerCase().split(/\s+/);
+      if (titleWords.includes('apple')) {
+        make = 'Apple';
+        if (titleWords.includes('watch') && titleWords.includes('series')) {
+          const seriesIndex = titleWords.indexOf('series');
+          model = `Series ${titleWords[seriesIndex + 1]}`; // e.g., "Series 7"
+        }
+      } else if (titleWords.includes('fitbit')) {
+        make = 'Fitbit';
+        if (titleWords.includes('charge')) {
+          const chargeIndex = titleWords.indexOf('charge');
+          model = `Charge ${titleWords[chargeIndex + 1]}`; // e.g., "Charge 5"
+        }
+      } else if (titleWords.includes('pokemon')) {
+        make = 'Pokemon';
+        model = 'Card';
+      }
+    }
+
+    // Log the derived specifics for confirmation
+    console.log('Derived Specifics for API Call:', { itemName, make, model, condition });
 
     // Call the /api/price-check endpoint with the extracted specifics
     const fetchMarketRate = async () => {
@@ -82,7 +137,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                  !!listingInfo.originalPrice && 
                  listingInfo.currentPrice < listingInfo.originalPrice;
   
-  // Calculate time remaining progress
   const calculateTimeProgress = (): number => {
     if (!listingInfo.timeRemaining) return 0;
     
@@ -99,7 +153,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     return Math.min(100, Math.max(0, 100 - (totalHours / maxHours) * 100));
   };
   
-  // Get time urgency color
   const getTimeColor = (): string => {
     if (!listingInfo.timeRemaining) return "text-gray-500";
     
@@ -110,7 +163,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     return "text-blue-500";
   };
   
-  // Generate tooltip text for the auction timing
   const getTimeTooltip = (): string => {
     if (!listingInfo.timeRemaining) return "";
     
@@ -399,7 +451,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
           </div>
         )}
 
-        {/* Display the market rate if available */}
         {marketRate && (
           <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
             <p className="text-xs text-blue-800 font-medium">
