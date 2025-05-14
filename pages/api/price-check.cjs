@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-EBAY-C-MARKETPLACE-ID": "EBAY_US" // Add the required header
+          "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"
         },
       }
     );
@@ -32,9 +32,21 @@ module.exports = async (req, res) => {
     }
 
     const data = await response.json();
-    // Process the data to calculate the auction market rate
-    // (Replace with your actual logic)
-    const marketRate = "calculated-value"; // Placeholder
+
+    // Calculate the market rate (average of recent sale prices)
+    if (!data.itemSales || data.itemSales.length === 0) {
+      throw new Error("No sales data found for the item");
+    }
+
+    const prices = data.itemSales
+      .filter(sale => sale.lastSoldPrice && sale.lastSoldPrice.value) // Ensure price exists
+      .map(sale => parseFloat(sale.lastSoldPrice.value)); // Extract price as a number
+
+    if (prices.length === 0) {
+      throw new Error("No valid price data found in sales");
+    }
+
+    const marketRate = (prices.reduce((sum, price) => sum + price, 0) / prices.length).toFixed(2);
 
     res.status(200).json({ marketRate });
   } catch (error) {
