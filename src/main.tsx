@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import App from './App.tsx'
@@ -56,9 +57,7 @@ const router = createBrowserRouter([
       }
     ]
   }
-], {
-  basename: '/public'
-});
+]);
 
 createRoot(document.getElementById("root")!).render(
   <RouterProvider router={router} />

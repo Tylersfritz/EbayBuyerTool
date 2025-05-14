@@ -1,10 +1,11 @@
+
 {
   "manifest_version": 3,
   "name": "DealHavenAI",
   "version": "1.0.0",
   "description": "Smart tools for buyers with price checks, negotiation assistance, auction sniping and more",
   "action": {
-    "default_popup": "public/index.html",
+    "default_popup": "index.html",
     "default_icon": {
       "16": "icon-16.png",
       "48": "icon-48.png",
