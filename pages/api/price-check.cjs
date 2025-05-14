@@ -1,17 +1,24 @@
-// api/price-check.js
-const cacheService = require('./cache-service');
+const cacheService = require('./cache-service.cjs');
 const fetch = require('node-fetch');
 
 /**
- * Fetches an OAuth token from eBay
+ * Fetches an OAuth token from eBay, with caching
  */
 async function getEbayOAuthToken(clientId, clientSecret) {
   try {
+    const cachedTokenData = cacheService.get('ebay_oauth_token');
+    const now = Date.now();
+
+    if (cachedTokenData && cachedTokenData.expiresAt > now) {
+      console.log('Using cached eBay OAuth token');
+      return cachedTokenData.accessToken;
+    }
+
     console.log('Attempting to fetch eBay OAuth token');
     console.log('Client ID (partial):', clientId.slice(0, 10) + '...');
     const authHeader = 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64');
     console.log('Authorization header (partial):', authHeader.slice(0, 10) + '...');
-    const response = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+    const response = await fetch('https://api.sandbox.ebay.com/identity/v1/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -19,7 +26,7 @@ async function getEbayOAuthToken(clientId, clientSecret) {
       },
       body: new URLSearchParams({
         grant_type: 'client_credentials',
-        scope: 'https://api.ebay.com/oauth/api_scope'
+        scope: 'https://api.ebay.com/oauth/api_scope/buy.marketplace.insights'
       })
     });
     const data = await response.json();
@@ -33,6 +40,14 @@ async function getEbayOAuthToken(clientId, clientSecret) {
       });
       throw new Error(`Failed to fetch eBay token: ${response.status}`);
     }
+
+    const expiresIn = data.expires_in || 7200;
+    const expiresAt = now + (expiresIn * 1000);
+    cacheService.set('ebay_oauth_token', {
+      accessToken: data.access_token,
+      expiresAt: expiresAt
+    }, expiresIn);
+
     return data.access_token;
   } catch (error) {
     console.error('getEbayOAuthToken Error:', error.message);
@@ -85,7 +100,6 @@ function getItemCategory(itemName, itemSpecifics) {
   const normalizedItemName = itemName.toLowerCase();
   const specs = itemSpecifics || {};
 
-  // Check itemSpecifics.Category or Type for clues
   const lowValueCategories = [
     'Cell Phone Accessories', 'Collectibles', 'Trading Card Games',
     'Jewelry & Watches', 'Health & Beauty', 'Crafts', 'Home & Garden',
@@ -101,13 +115,11 @@ function getItemCategory(itemName, itemSpecifics) {
   const isLowValueCategory = lowValueCategories.some(cat => category.toLowerCase().includes(cat.toLowerCase()));
   const isHighValueCategory = highValueCategories.some(cat => category.toLowerCase().includes(cat.toLowerCase()));
 
-  // Determine category based on keywords and specifics
   if (isLowValueCategory || lowValueKeywords.some(keyword => normalizedItemName.includes(keyword))) {
     return { category: 'low-value', minPrice: 0, minItems: 1 };
   } else if (isHighValueCategory || highValueKeywords.some(keyword => normalizedItemName.includes(keyword))) {
     return { category: 'high-value', minPrice: 50, minItems: 3 };
   } else {
-    // Default to mid-value for ambiguous cases
     return { category: 'mid-value', minPrice: 10, minItems: 2 };
   }
 }
@@ -126,18 +138,27 @@ function calculatePriceOutliers(prices) {
 }
 
 /**
- * Makes an API call to the eBay Marketplace Insights API
+ * Makes an API call to the eBay Marketplace Insights API, with caching
  */
 async function makeEbayApiCall(params, accessToken, condition) {
   try {
     const query = encodeURIComponent(params.itemName);
-    let url = `https://api.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?q=${query}&fieldgroups=ITEM_SALES&limit=10`;
+    let url = `https://api.sandbox.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?q=${query}&fieldgroups=ITEM_SALES&limit=10`;
     if (condition) {
       const ebayCondition = mapConditionToEbayFormat(condition);
       const conditionFilter = buildConditionFilter(ebayCondition);
       url += `&filter=${conditionFilter}`;
       console.log(`Using condition filter: ${conditionFilter}`);
     }
+    
+    // Generate a cache key for the API response
+    const cacheKey = `ebay_api:${url}`;
+    const cachedData = cacheService.get(cacheKey);
+    if (cachedData) {
+      console.log('Returning cached eBay API response');
+      return cachedData;
+    }
+
     console.log('eBay API Request URL:', url);
     const response = await fetch(url, {
       headers: {
@@ -156,7 +177,11 @@ async function makeEbayApiCall(params, accessToken, condition) {
       });
       throw new Error(`Failed to fetch eBay data: ${response.status}`);
     }
-    return data.itemSummaries || [];
+
+    // Cache the API response for 1 hour (3600 seconds)
+    const items = data.itemSummaries || [];
+    cacheService.set(cacheKey, items, 3600);
+    return items;
   } catch (error) {
     console.error('makeEbayApiCall Error:', error.message);
     throw error;
@@ -170,7 +195,7 @@ module.exports = async function (req, res) {
   const params = req.query;
   console.log('Received params:', params);
 
-  // Check cache
+  // Check cache for price check result
   const cachedResult = cacheService.getCachedPriceCheck(params);
   if (cachedResult) {
     console.log('Returning cached price check result');
@@ -188,11 +213,9 @@ module.exports = async function (req, res) {
   try {
     const accessToken = await getEbayOAuthToken(clientId, clientSecret);
 
-    // Determine item category and thresholds
     const { category, minPrice, minItems } = getItemCategory(params.itemName || '', params.itemSpecifics || {});
     console.log(`Item category: ${category}, minPrice: ${minPrice}, minItems: ${minItems}`);
 
-    // Query for multiple conditions
     const conditions = ['NEW', 'USED', 'REFURBISHED'];
     const conditionAnalysis = [];
 
@@ -212,7 +235,6 @@ module.exports = async function (req, res) {
       }
     }
 
-    // Query for primary condition
     const items = await makeEbayApiCall(params, accessToken, params.condition);
     console.log('Processed items:', items);
 
@@ -221,7 +243,6 @@ module.exports = async function (req, res) {
       .map(item => parseFloat(item.price.value));
     const filteredPrices = calculatePriceOutliers(prices.filter(price => price >= minPrice));
 
-    // Handle cases with insufficient items
     if (filteredPrices.length < minItems) {
       const fallbackResult = {
         averagePrice: filteredPrices.length > 0 ? (filteredPrices.reduce((sum, price) => sum + price, 0) / filteredPrices.length).toFixed(2) : 0,
@@ -240,7 +261,7 @@ module.exports = async function (req, res) {
         dateRange: items.length > 0 ? 
           `${items[items.length - 1].lastSoldDate || 'Unknown'} - ${items[0].lastSoldDate || 'Unknown'}` : 
           null,
-        source: 'eBay Marketplace Insights API',
+        source: 'eBay Marketplace Insights API (Sandbox)',
         conditionAnalysis,
         timestamp: new Date().toISOString(),
         warning: filteredPrices.length > 0 ? 'Limited data available; results may be less reliable' : 'Insufficient relevant items found'
@@ -267,7 +288,7 @@ module.exports = async function (req, res) {
       dateRange: items.length > 0 ? 
         `${items[items.length - 1].lastSoldDate || 'Unknown'} - ${items[0].lastSoldDate || 'Unknown'}` : 
         null,
-      source: 'eBay Marketplace Insights API',
+      source: 'eBay Marketplace Insights API (Sandbox)',
       conditionAnalysis,
       timestamp: new Date().toISOString()
     };
@@ -280,3 +301,6 @@ module.exports = async function (req, res) {
     return res.status(500).json({ error: error.message });
   }
 };
+
+// Export getEbayOAuthToken for testing
+module.exports.getEbayOAuthToken = getEbayOAuthToken;
