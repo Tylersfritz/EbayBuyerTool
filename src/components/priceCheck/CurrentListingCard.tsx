@@ -44,7 +44,19 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   const [marketRate, setMarketRate] = useState<number | null>(null);
   const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
+  // Log to confirm the component is rendering
   console.log('CurrentListingCard rendered with props:', { listingInfo, loadingListingInfo });
+
+  // Add a state to force re-run useEffect if listingInfo changes
+  const [listingInfoKey, setListingInfoKey] = useState(JSON.stringify(listingInfo));
+
+  useEffect(() => {
+    // Update listingInfoKey when listingInfo changes
+    const newKey = JSON.stringify(listingInfo);
+    if (newKey !== listingInfoKey) {
+      setListingInfoKey(newKey);
+    }
+  }, [listingInfo, listingInfoKey]);
 
   useEffect(() => {
     console.log('useEffect triggered for CurrentListingCard with listingInfo:', listingInfo);
@@ -222,7 +234,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
 
     // Start the extraction process
     attemptExtraction();
-  }, [listingInfo]);
+  }, [listingInfoKey]); // Use listingInfoKey to ensure useEffect runs on deep changes
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
