@@ -13,9 +13,12 @@ module.exports = async (req, res) => {
     // Debug: Log the token (first 10 characters for safety)
     console.log(`Using token: ${token.substring(0, 10)}...`);
 
-    // Step 1: If itemId is provided, fetch item specifics using Browse API
+    // Step 1: Fetch item specifics using Browse API if itemId is provided
+    let make = null;
     let model = null;
     let categoryId = null;
+    let keywordQuery = itemName;
+
     if (itemId) {
       const browseResponse = await fetch(
         `https://api.sandbox.ebay.com/buy/browse/v1/item/v1|${itemId}|0`,
@@ -39,9 +42,11 @@ module.exports = async (req, res) => {
       // Debug: Log the Browse API response
       console.log(`Browse API Response: ${JSON.stringify(browseData).substring(0, 500)}...`);
 
-      // Extract item specifics (e.g., model)
+      // Extract item specifics (e.g., make, model)
       if (browseData.localizedAspects) {
+        const makeAspect = browseData.localizedAspects.find(aspect => aspect.name.toLowerCase() === "brand" || aspect.name.toLowerCase() === "make");
         const modelAspect = browseData.localizedAspects.find(aspect => aspect.name.toLowerCase() === "model");
+        make = makeAspect ? makeAspect.value : null;
         model = modelAspect ? modelAspect.value : null;
       }
 
@@ -50,19 +55,24 @@ module.exports = async (req, res) => {
         const categoryPath = browseData.categoryPath.split("|");
         categoryId = categoryPath[categoryPath.length - 1]; // Last part is the category ID
       }
+
+      // Construct a keyword query from item specifics
+      keywordQuery = [make, model].filter(Boolean).join(" ") || itemName;
     }
 
-    // Step 2: Construct the Market Insights API query
-    let queryParam = itemId ? `itemIds=${itemId}` : `q=${encodeURIComponent(itemName)}`;
+    // Step 2: Construct the Market Insights API query using keywords
     let additionalParams = `&condition=${condition}&fieldgroups=ASPECT_REFINEMENTS`;
     if (categoryId) {
       additionalParams += `&categoryId=${categoryId}`;
     }
+    if (make && categoryId) {
+      additionalParams += `&aspectFilter=categoryId:${categoryId},brand:${encodeURIComponent(make)}`;
+    }
     if (model && categoryId) {
-      additionalParams += `&aspectFilter=categoryId:${categoryId},model:${encodeURIComponent(model)}`;
+      additionalParams += `,model:${encodeURIComponent(model)}`;
     }
 
-    const marketInsightsUrl = `https://api.sandbox.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?${queryParam}${additionalParams}`;
+    const marketInsightsUrl = `https://api.sandbox.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?q=${encodeURIComponent(keywordQuery)}${additionalParams}`;
 
     // Call the Market Insights API
     const response = await fetch(marketInsightsUrl, {
@@ -86,7 +96,7 @@ module.exports = async (req, res) => {
 
     // Calculate the market rate (average of recent sale prices)
     if (!data.itemSales || data.itemSales.length === 0) {
-      throw new Error("No sales data found for the item");
+      throw new Error("No sales data found for similar items");
     }
 
     const prices = data.itemSales
