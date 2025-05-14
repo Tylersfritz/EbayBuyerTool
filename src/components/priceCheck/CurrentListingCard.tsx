@@ -44,8 +44,16 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   const [marketRate, setMarketRate] = useState<number | null>(null);
   const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
+  console.log('CurrentListingCard rendered with props:', { listingInfo, loadingListingInfo });
+
   useEffect(() => {
     console.log('useEffect triggered for CurrentListingCard with listingInfo:', listingInfo);
+
+    // Skip extraction if listingInfo is not fully populated
+    if (!listingInfo || !listingInfo.title || !listingInfo.itemId) {
+      console.log('Skipping extraction: listingInfo is incomplete');
+      return;
+    }
 
     // Function to extract Item Specifics from the DOM
     const extractItemSpecificsFromDOM = (): Record<string, string> => {
