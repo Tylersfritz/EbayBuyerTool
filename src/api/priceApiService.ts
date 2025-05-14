@@ -1,17 +1,9 @@
+
 // src/api/priceApiService.ts
 // Service to interact with the price-check API endpoint for DealHavenAI
 
-// Type definition for the API response, matching the /api/price-check output
-export interface PriceCheckResponse {
-  averagePrice: number;
-  priceHistory: Array<{ date: string; price: number }>;
-  sampleSize: number;
-  dateRange: string;
-  source: string;
-  itemCount: number;
-  timestamp: string;
-  error?: string;
-}
+// Import the type from the central types file
+import { PriceCheckResponse } from '@/components/priceCheck/types/priceCheckTypes';
 
 // Type definition for the parameters sent to the price-check endpoint
 export interface PriceCheckParams {
@@ -21,6 +13,9 @@ export interface PriceCheckParams {
   condition?: string;
   premium: boolean;
 }
+
+// Re-export the PriceCheckResponse type for backward compatibility
+export type { PriceCheckResponse };
 
 /**
  * Fetches price check data from the price-check API endpoint

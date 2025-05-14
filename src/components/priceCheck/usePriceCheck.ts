@@ -1,9 +1,10 @@
+
 // src/components/priceCheck/usePriceCheck.ts
 import { useState, useEffect } from 'react';
 import { getCurrentListing } from '@/utils/listing/listingUtils';
 import { shouldUseAuctionMockData } from '@/utils/mock/mockModeUtils';
-import { getPriceCheck, PriceCheckResponse } from '@/api/priceApiService';
-import { ListingInfo, PriceCheckState } from './types/priceCheckTypes';
+import { getPriceCheck } from '@/api/priceApiService';
+import { ListingInfo, PriceCheckState, PriceCheckResponse } from './types/priceCheckTypes';
 import { extractItemSearchParams } from '../../api/priceApiClient';
 import {
   mockPriceCheckData,
@@ -105,7 +106,7 @@ export function usePriceCheck(isPremium: boolean) {
         console.log('Test mode: Using mock price data');
         await new Promise(resolve => setTimeout(resolve, 1500));
         const listingPrice = Math.max(state.listingInfo.currentPrice, 0.01);
-        const mockDataAdjusted = {
+        const mockDataAdjusted: PriceCheckResponse = {
           ...mockPriceCheckData,
           averagePrice: isAuctionMode ? listingPrice * 1.15 : listingPrice * 0.95,
           sampleSize: 10,
@@ -113,7 +114,8 @@ export function usePriceCheck(isPremium: boolean) {
           source: 'Mock Data',
           itemCount: 10,
           timestamp: new Date().toISOString(),
-          priceHistory: [{ date: '2025-05-10', price: listingPrice * 0.95 }]
+          priceHistory: [{ date: '2025-05-10', price: listingPrice * 0.95 }],
+          priceRange: { min: listingPrice * 0.8, max: listingPrice * 1.2 }
         };
         console.log('Mock price data:', JSON.stringify(mockDataAdjusted, null, 2));
         setState(prev => ({

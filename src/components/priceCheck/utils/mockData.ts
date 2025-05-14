@@ -1,15 +1,22 @@
-
 /**
  * Mock data for price check components for testing and development
  */
 
-import { PriceCheckResponse } from "@/api/priceApiService";
+import { PriceCheckResponse } from "../types/priceCheckTypes";
 import { ListingInfo } from "../types/priceCheckTypes";
 
 // Mock price check API response
 export const mockPriceCheckData: PriceCheckResponse = {
   averagePrice: 389.99,
   itemCount: 24,
+  priceRange: { min: 329.99, max: 449.99 },
+  priceHistory: [
+    { date: "2023-04-25", price: 394.99 },
+    { date: "2023-04-30", price: 389.99 }
+  ],
+  sampleSize: 24,
+  dateRange: "2023-04-01 - 2023-04-30",
+  source: "eBay",
   timestamp: new Date().toISOString()
 };
 

@@ -1,3 +1,4 @@
+
 /**
  * Browser API Abstraction Layer for DealHavenAI
  * This utility provides a cross-browser compatible way to access browser extension APIs
@@ -8,9 +9,9 @@ let browser: any;
 try {
   // Only import in extension environments
   // This conditional import prevents the error in web environments
-  if (typeof chrome !== 'undefined' && chrome.runtime && 'id' in chrome.runtime) {
+  if (typeof chrome !== 'undefined' && chrome?.runtime && 'id' in chrome.runtime) {
     // We're in a browser extension context
-    browser = window.browser || window.chrome;
+    browser = window?.browser || window?.chrome;
   } else {
     // Mock browser for development mode
     browser = null;

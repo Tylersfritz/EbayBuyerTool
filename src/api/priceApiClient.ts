@@ -1,23 +1,7 @@
 // src/api/priceApiClient.ts
 
 import { toast } from "@/components/ui/sonner";
-
-/**
- * Interface for the price check API response
- */
-export interface PriceCheckResponse {
-  averagePrice: number;
-  itemCount: number;
-  timestamp: string;
-  priceRange?: { min: number; max: number };
-  priceHistory?: { date: string; price: number }[];
-  sampleSize?: number;
-  dateRange?: string;
-  source?: string;
-  conditionAnalysis?: { condition: string; averagePrice: number; itemCount: number }[];
-  error?: string;
-  warning?: string;
-}
+import { PriceCheckResponse } from "@/components/priceCheck/types/priceCheckTypes";
 
 /**
  * Interface for price check API options
@@ -255,6 +239,7 @@ function createErrorResponse(errorMessage: string): PriceCheckResponse {
     averagePrice: 0,
     itemCount: 0,
     timestamp: new Date().toISOString(),
+    priceRange: { min: 0, max: 0 },
     error: errorMessage
   };
 }
