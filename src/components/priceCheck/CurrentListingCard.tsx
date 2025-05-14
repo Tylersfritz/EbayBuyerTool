@@ -45,35 +45,49 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    console.log('useEffect triggered for CurrentListingCard with listingInfo:', listingInfo);
+
     // Function to extract Item Specifics from the DOM
     const extractItemSpecificsFromDOM = (): Record<string, string> => {
       const specifics: Record<string, string> = {};
       try {
         console.log('Attempting to extract Item Specifics from DOM...');
-        // Try a more generic approach to find Item Specifics
-        const labels = document.querySelectorAll('[class*="label"], [class*="title"], [id*="lbl"], [class*="attr"], [class*="ux-label"]');
-        console.log(`Found ${labels.length} potential label elements`);
+        // Target eBay's "Item Specifics" section more precisely
+        const specificsSection = document.querySelector('.ux-layout-section--item-specifics') || 
+                                document.querySelector('#viTabs_0_is') || 
+                                document.querySelector('.itemAttr') ||
+                                document.querySelector('[data-testid="ux-section"]');
+        console.log('Specifics Section Element:', specificsSection ? specificsSection.outerHTML : 'Not found');
 
-        labels.forEach((labelElement, index) => {
-          const labelText = labelElement.textContent?.trim().toLowerCase().replace(':', '');
-          const parent = labelElement.parentElement;
-          const valueElement = parent?.querySelector('td:not([class*="label"]), span:not([class*="label"]), div:not([class*="label"])');
-          const value = valueElement?.textContent?.trim();
+        if (specificsSection) {
+          // Look for label-value pairs within the section
+          const labels = specificsSection.querySelectorAll('.ux-labels-values__labels, .attrLabels, [class*="label"], [class*="title"]');
+          console.log(`Found ${labels.length} potential label elements`);
 
-          console.log(`Label ${index}: Text=${labelText}, Value=${value}`);
-          if (labelText && value) {
-            if (labelText.includes('brand') || labelText.includes('make')) {
-              specifics['Brand'] = value;
-            } else if (labelText.includes('model')) {
-              specifics['Model'] = value;
-            } else if (labelText.includes('condition')) {
-              specifics['Condition'] = value;
+          labels.forEach((labelElement, index) => {
+            const labelText = labelElement.textContent?.trim().toLowerCase().replace(':', '');
+            // Find the corresponding value element (sibling or child)
+            const parent = labelElement.closest('.ux-labels-values__row, tr, div');
+            const valueElement = parent?.querySelector('.ux-labels-values__values, td:not(.attrLabels), span:not([class*="label"]), div:not([class*="label"])');
+            const value = valueElement?.textContent?.trim();
+
+            console.log(`Label ${index}: Text=${labelText}, Value=${value}`);
+            if (labelText && value) {
+              if (labelText.includes('brand') || labelText.includes('make')) {
+                specifics['Brand'] = value;
+              } else if (labelText.includes('model')) {
+                specifics['Model'] = value;
+              } else if (labelText.includes('condition')) {
+                specifics['Condition'] = value;
+              }
             }
-          }
-        });
+          });
 
-        if (Object.keys(specifics).length === 0) {
-          console.log('No specifics found with generic selectors');
+          if (Object.keys(specifics).length === 0) {
+            console.log('No specifics found with targeted selectors');
+          }
+        } else {
+          console.log('No specifics section found with any selector');
         }
       } catch (error) {
         console.error('Error extracting Item Specifics from DOM:', error);
@@ -86,9 +100,12 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
       const targetNode = document.body;
       const observer = new MutationObserver((mutations, observer) => {
         console.log('DOM changed, checking for specifics...');
-        const labels = document.querySelectorAll('[class*="label"], [class*="title"], [id*="lbl"], [class*="attr"], [class*="ux-label"]');
-        if (labels.length > 0) {
-          console.log('Specifics labels detected via MutationObserver');
+        const specificsSection = document.querySelector('.ux-layout-section--item-specifics') || 
+                                document.querySelector('#viTabs_0_is') || 
+                                document.querySelector('.itemAttr') ||
+                                document.querySelector('[data-testid="ux-section"]');
+        if (specificsSection) {
+          console.log('Specifics section detected via MutationObserver');
           observer.disconnect(); // Stop observing once found
           callback();
         }
