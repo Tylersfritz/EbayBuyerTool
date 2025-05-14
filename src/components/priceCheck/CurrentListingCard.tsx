@@ -45,87 +45,111 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Function to extract Item Specifics from the DOM
-    const extractItemSpecificsFromDOM = (): Record<string, string> => {
+    // Function to extract Item Specifics from the DOM with retry logic
+    const extractItemSpecificsFromDOM = async (): Promise<Record<string, string>> => {
       const specifics: Record<string, string> = {};
-      try {
-        // Adjust selector based on eBay's actual DOM structure
-        const specificsTable = document.querySelector('.itemAttr table');
-        if (specificsTable) {
-          const rows = specificsTable.querySelectorAll('tr');
-          rows.forEach(row => {
-            const label = row.querySelector('.attrLabels')?.textContent?.trim().replace(':', '');
-            const value = row.querySelector('td:not(.attrLabels)')?.textContent?.trim();
-            if (label && value) {
-              specifics[label] = value;
+      let attempts = 0;
+      const maxAttempts = 5;
+      const retryDelay = 500; // 500ms delay between retries
+
+      while (attempts < maxAttempts) {
+        try {
+          // Adjust selector based on eBay's actual DOM structure
+          // Common eBay selectors for Item Specifics
+          const specificsSection = document.querySelector('#viTabs_0_is .section') || 
+                                  document.querySelector('.ux-layout-section__item--table-view') ||
+                                  document.querySelector('.itemAttr');
+          if (specificsSection) {
+            const rows = specificsSection.querySelectorAll('tr') || 
+                        specificsSection.querySelectorAll('.ux-labels-values__labels')?.parentElement?.querySelectorAll('div');
+            if (rows && rows.length > 0) {
+              rows.forEach(row => {
+                const labelElement = row.querySelector('.attrLabels, .ux-labels-values__labels');
+                const valueElement = row.querySelector('td:not(.attrLabels), .ux-labels-values__values');
+                const label = labelElement?.textContent?.trim().replace(':', '');
+                const value = valueElement?.textContent?.trim();
+                if (label && value) {
+                  specifics[label] = value;
+                }
+              });
+              break; // Exit loop if specifics are found
             }
-          });
+          }
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+        } catch (error) {
+          console.error(`Error extracting Item Specifics from DOM (attempt ${attempts + 1}/${maxAttempts}):`, error);
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
         }
-      } catch (error) {
-        console.error('Error extracting Item Specifics from DOM:', error);
       }
       return specifics;
     };
 
     // Extract and cache Item Specifics
-    const extractedSpecifics = extractItemSpecificsFromDOM();
-    setCachedSpecifics(extractedSpecifics);
+    extractItemSpecificsFromDOM().then(extractedSpecifics => {
+      setCachedSpecifics(extractedSpecifics);
 
-    // Log the captured specifics for debugging
-    console.log('Captured Item Specifics from DOM:', extractedSpecifics);
-    console.log('Listing Info from getCurrentListing:', listingInfo);
+      // Log the captured specifics for debugging
+      console.log('Captured Item Specifics from DOM:', extractedSpecifics);
+      console.log('Listing Info from getCurrentListing:', listingInfo);
 
-    // Extract relevant specifics for the API call
-    let make = extractedSpecifics['Brand'] || extractedSpecifics['Make'] || listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
-    let model = extractedSpecifics['Model'] || listingInfo.itemSpecifics?.['Model'] || '';
-    let condition = listingInfo.condition || 'USED'; // Default to USED if not provided
-    const itemName = listingInfo.title || '';
+      // Extract relevant specifics for the API call
+      let make = extractedSpecifics['Brand'] || extractedSpecifics['Make'] || listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
+      let model = extractedSpecifics['Model'] || listingInfo.itemSpecifics?.['Model'] || '';
+      let condition = listingInfo.condition || 'USED'; // Default to USED if not provided
+      const itemName = listingInfo.title || '';
 
-    // Clean condition value (remove duplication like "UsedUsed")
-    condition = condition.replace(/UsedUsed/, 'USED');
+      // Clean condition value (remove duplication like "UsedUsed")
+      condition = condition.replace(/UsedUsed/, 'USED');
 
-    // Fallback: Derive make and model from title if not found in specifics
-    if (!make || !model) {
-      const titleWords = itemName.toLowerCase().split(/\s+/);
-      if (titleWords.includes('apple')) {
-        make = 'Apple';
-        if (titleWords.includes('watch') && titleWords.includes('series')) {
-          const seriesIndex = titleWords.indexOf('series');
-          model = `Series ${titleWords[seriesIndex + 1]}`; // e.g., "Series 7"
+      // Fallback: Derive make and model from title if not found in specifics
+      if (!make || !model) {
+        const titleWords = itemName.toLowerCase().split(/\s+/);
+        if (titleWords.includes('apple')) {
+          make = 'Apple';
+          if (titleWords.includes('watch') && titleWords.includes('series')) {
+            const seriesIndex = titleWords.indexOf('series');
+            model = `Series ${titleWords[seriesIndex + 1]}`; // e.g., "Series 7"
+          }
+        } else if (titleWords.includes('fitbit')) {
+          make = 'Fitbit';
+          if (titleWords.includes('charge')) {
+            const chargeIndex = titleWords.indexOf('charge');
+            model = `Charge ${titleWords[chargeIndex + 1]}`; // e.g., "Charge 5"
+          }
+        } else if (titleWords.includes('pokemon')) {
+          make = 'Pokemon';
+          model = 'Card';
         }
-      } else if (titleWords.includes('fitbit')) {
-        make = 'Fitbit';
-        if (titleWords.includes('charge')) {
-          const chargeIndex = titleWords.indexOf('charge');
-          model = `Charge ${titleWords[chargeIndex + 1]}`; // e.g., "Charge 5"
-        }
-      } else if (titleWords.includes('pokemon')) {
-        make = 'Pokemon';
-        model = 'Card';
       }
-    }
 
-    // Log the derived specifics for confirmation
-    console.log('Derived Specifics for API Call:', { itemName, make, model, condition });
+      // Log the derived specifics for confirmation
+      console.log('Derived Specifics for API Call:', { itemName, make, model, condition });
 
-    // Call the /api/price-check endpoint with the extracted specifics
-    const fetchMarketRate = async () => {
-      try {
-        const response = await fetch(
-          `/api/price-check?itemName=${encodeURIComponent(itemName)}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&condition=${encodeURIComponent(condition)}&premium=false`
-        );
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
+      // Call the /api/price-check endpoint with the extracted specifics
+      const fetchMarketRate = async () => {
+        try {
+          const response = await fetch(
+            `/api/price-check?itemName=${encodeURIComponent(itemName)}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&condition=${encodeURIComponent(condition)}&premium=false`
+          );
+          const data = await response.json();
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          setMarketRate(data.marketRate);
+        } catch (error) {
+          console.error('Error fetching market rate:', error.message);
+          setMarketRate(null);
         }
-        setMarketRate(data.marketRate);
-      } catch (error) {
-        console.error('Error fetching market rate:', error.message);
-        setMarketRate(null);
-      }
-    };
+      };
 
-    fetchMarketRate();
+      fetchMarketRate();
+    });
   }, [listingInfo]);
 
   const formatPrice = (price: number): string => {
