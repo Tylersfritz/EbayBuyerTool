@@ -45,57 +45,97 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   const [cachedSpecifics, setCachedSpecifics] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Function to extract Item Specifics from the DOM with retry logic
-    const extractItemSpecificsFromDOM = async (): Promise<Record<string, string>> => {
+    // Function to extract Item Specifics from the DOM
+    const extractItemSpecificsFromDOM = (): Record<string, string> => {
       const specifics: Record<string, string> = {};
-      let attempts = 0;
-      const maxAttempts = 5;
-      const retryDelay = 500; // 500ms delay between retries
+      try {
+        console.log('Attempting to extract Item Specifics from DOM...');
+        // Try multiple selectors for eBay's Item Specifics section
+        const specificsSection = document.querySelector('#viTabs_0_is .section') || 
+                                document.querySelector('.ux-layout-section__item--table-view') ||
+                                document.querySelector('.itemAttr') ||
+                                document.querySelector('.ux-labels-values');
+        console.log('Specifics Section Element:', specificsSection ? specificsSection.outerHTML : 'Not found');
 
-      while (attempts < maxAttempts) {
-        try {
-          // Adjust selector based on eBay's actual DOM structure
-          // Common eBay selectors for Item Specifics
-          const specificsSection = document.querySelector('#viTabs_0_is .section') || 
-                                  document.querySelector('.ux-layout-section__item--table-view') ||
-                                  document.querySelector('.itemAttr');
-          if (specificsSection) {
-            const rows = specificsSection.querySelectorAll('tr') || 
-                        specificsSection.querySelectorAll('.ux-labels-values__labels')?.parentElement?.querySelectorAll('div');
-            if (rows && rows.length > 0) {
-              rows.forEach(row => {
-                const labelElement = row.querySelector('.attrLabels, .ux-labels-values__labels');
-                const valueElement = row.querySelector('td:not(.attrLabels), .ux-labels-values__values');
-                const label = labelElement?.textContent?.trim().replace(':', '');
-                const value = valueElement?.textContent?.trim();
-                if (label && value) {
-                  specifics[label] = value;
-                }
-              });
-              break; // Exit loop if specifics are found
+        if (specificsSection) {
+          const rows = specificsSection.querySelectorAll('tr') || 
+                      specificsSection.querySelectorAll('.ux-labels-values__row') ||
+                      specificsSection.querySelectorAll('div');
+          console.log(`Found ${rows.length} rows in specifics section`);
+
+          rows.forEach((row, index) => {
+            const labelElement = row.querySelector('.attrLabels, .ux-labels-values__labels');
+            const valueElement = row.querySelector('td:not(.attrLabels), .ux-labels-values__values');
+            const label = labelElement?.textContent?.trim().replace(':', '');
+            const value = valueElement?.textContent?.trim();
+            console.log(`Row ${index}: Label=${label}, Value=${value}`);
+            if (label && value) {
+              specifics[label] = value;
             }
-          }
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-          }
-        } catch (error) {
-          console.error(`Error extracting Item Specifics from DOM (attempt ${attempts + 1}/${maxAttempts}):`, error);
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-          }
+          });
+        } else {
+          console.log('No specifics section found with any selector');
         }
+      } catch (error) {
+        console.error('Error extracting Item Specifics from DOM:', error);
       }
       return specifics;
     };
 
-    // Extract and cache Item Specifics
-    extractItemSpecificsFromDOM().then(extractedSpecifics => {
-      setCachedSpecifics(extractedSpecifics);
+    // Use MutationObserver to watch for DOM changes if specifics are not immediately available
+    const observeDOMForSpecifics = (callback: () => void) => {
+      const targetNode = document.body;
+      const observer = new MutationObserver((mutations, observer) => {
+        console.log('DOM changed, checking for specifics section...');
+        const specificsSection = document.querySelector('#viTabs_0_is .section') || 
+                                document.querySelector('.ux-layout-section__item--table-view') ||
+                                document.querySelector('.itemAttr') ||
+                                document.querySelector('.ux-labels-values');
+        if (specificsSection) {
+          console.log('Specifics section detected via MutationObserver');
+          observer.disconnect(); // Stop observing once found
+          callback();
+        }
+      });
 
-      // Log the captured specifics for debugging
-      console.log('Captured Item Specifics from DOM:', extractedSpecifics);
+      observer.observe(targetNode, { childList: true, subtree: true });
+      return observer;
+    };
+
+    // Extract and cache Item Specifics with retry logic
+    const attemptExtraction = async (maxAttempts = 5, retryDelay = 500) => {
+      let attempts = 0;
+      let extractedSpecifics: Record<string, string> = {};
+
+      while (attempts < maxAttempts) {
+        console.log(`Extraction attempt ${attempts + 1}/${maxAttempts}`);
+        extractedSpecifics = extractItemSpecificsFromDOM();
+        if (Object.keys(extractedSpecifics).length > 0) {
+          break; // Exit loop if specifics are found
+        }
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+
+      if (Object.keys(extractedSpecifics).length === 0) {
+        console.log('No specifics found after retries, setting up MutationObserver...');
+        observeDOMForSpecifics(() => {
+          const finalSpecifics = extractItemSpecificsFromDOM();
+          setCachedSpecifics(finalSpecifics);
+          console.log('Captured Item Specifics via MutationObserver:', finalSpecifics);
+          proceedWithPriceCheck(finalSpecifics);
+        });
+      } else {
+        setCachedSpecifics(extractedSpecifics);
+        console.log('Captured Item Specifics from DOM:', extractedSpecifics);
+        proceedWithPriceCheck(extractedSpecifics);
+      }
+    };
+
+    // Process the extracted specifics and fetch the market rate
+    const proceedWithPriceCheck = (extractedSpecifics: Record<string, string>) => {
       console.log('Listing Info from getCurrentListing:', listingInfo);
 
       // Extract relevant specifics for the API call
@@ -149,7 +189,10 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
       };
 
       fetchMarketRate();
-    });
+    };
+
+    // Start the extraction process
+    attemptExtraction();
   }, [listingInfo]);
 
   const formatPrice = (price: number): string => {
