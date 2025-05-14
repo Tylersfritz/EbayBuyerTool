@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ChevronUp, ChevronDown, AlertCircle, Loader, Sparkles } from "lucide-react";
-import { PriceCheckResponse } from "@/api/priceApiClient";
+import { PriceCheckResponse } from "@/components/priceCheck/types/priceCheckTypes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPrice } from "@/utils/extensionUtils";
 
