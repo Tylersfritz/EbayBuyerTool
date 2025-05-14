@@ -1,13 +1,13 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" }
+    { "src": "pages/api/**/*.cjs", "use": "@vercel/node" }
   ],
   "rewrites": [
-    { "source": "/api/price-check", "destination": "/api/price-check.js" },
-    { "source": "/api/health", "destination": "/api/health.js" },
-    { "source": "/price-check", "destination": "/api/price-check.js" },
-    { "source": "/health", "destination": "/api/health.js" }
+    { "source": "/api/price-check", "destination": "/pages/api/price-check.cjs" },
+    { "source": "/api/health", "destination": "/pages/api/health.cjs" },
+    { "source": "/price-check", "destination": "/pages/api/price-check.cjs" },
+    { "source": "/health", "destination": "/pages/api/health.cjs" }
   ],
   "headers": [
     {
