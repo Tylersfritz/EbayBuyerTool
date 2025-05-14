@@ -4,36 +4,16 @@ module.exports = async (req, res) => {
   try {
     const { itemName, condition, premium } = req.query;
 
-    // Check if EBAY_API_TOKEN is available
-    let token = process.env.EBAY_API_TOKEN;
+    // Use EBAY_API_TOKEN directly
+    const token = process.env.EBAY_API_TOKEN;
     if (!token) {
-      // Fetch a new token using sandbox credentials
-      const clientId = process.env.EBAY_CLIENT_ID_SBX;
-      const clientSecret = process.env.EBAY_CLIENT_SECRET_SBX;
-      if (!clientId || !clientSecret) {
-        throw new Error("EBAY_CLIENT_ID_SBX or EBAY_CLIENT_SECRET_SBX is not set");
-      }
-
-      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-      const tokenResponse = await fetch('https://api.sandbox.ebay.com/identity/v1/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${auth}`,
-        },
-        body: 'grant_type=client_credentials&scope=https%3A%2F%2Fapi.ebay.com%2Foauth%2Fapi_scope%2Fbuy.marketplace.insights',
-      });
-
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        throw new Error(`Failed to fetch eBay token: ${tokenResponse.status}, Details: ${errorText}`);
-      }
-
-      const tokenData = await tokenResponse.json();
-      token = tokenData.access_token;
+      throw new Error("EBAY_API_TOKEN is not set");
     }
 
-    // Use the token to call the Market Insights API
+    // Debug: Log the token (first 10 characters for safety)
+    console.log(`Using token: ${token.substring(0, 10)}...`);
+
+    // Call the Market Insights API
     const response = await fetch(
       `https://api.sandbox.ebay.com/buy/marketplace_insights/v1_beta/item_sales/search?q=${encodeURIComponent(itemName)}&condition=${condition}`,
       {
