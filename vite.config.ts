@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -60,7 +61,8 @@ export default defineConfig(({ mode }) => {
         external: ['webextension-polyfill']
       },
       assetsInlineLimit: 0,
-      copyPublicDir: false
+      // Changed from false to true to properly copy public assets
+      copyPublicDir: true
     }
   };
 });
