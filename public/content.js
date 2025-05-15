@@ -1,3 +1,4 @@
+
 // public/content.js
 console.log('DealHavenAI Extension loaded');
 
@@ -11,7 +12,17 @@ try {
 
 const api = typeof browser !== 'undefined' ? browser : chrome;
 
+// Listen for test mode messages even if not on eBay
+api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'testModeGetListingInfo') {
+    console.log('Test mode message received in content script');
+    sendResponse({ testMode: true, status: 'Content script accessible' });
+    return true;
+  }
+});
+
 if (window.location.href.includes('ebay.com/itm/')) {
+  console.log('DealHavenAI: eBay listing detected at:', window.location.href);
   api.runtime.sendMessage({ action: 'onEbayListing' });
 
   api.runtime.onMessage.addListener((message, sender, sendResponse) => {

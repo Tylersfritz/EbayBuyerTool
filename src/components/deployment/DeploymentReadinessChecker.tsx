@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, AlertCircle, AlertTriangle, ArrowRight, RefreshCcw } from "lucide-react";
+import { CheckCircle, AlertCircle, AlertTriangle, ArrowRight, RefreshCcw, Code } from "lucide-react";
 import { useApiHealth } from '@/context/ApiHealthContext';
 import { getApiConfig } from '@/api/apiConfig';
 import { isExtensionEnvironment } from '@/utils/browserUtils';
@@ -17,6 +17,7 @@ interface CheckResult {
   status: 'success' | 'warning' | 'error' | 'pending';
   message: string;
   details?: string;
+  debug?: any;
 }
 
 const DeploymentReadinessChecker: React.FC = () => {
@@ -24,6 +25,7 @@ const DeploymentReadinessChecker: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [apiUrl, setApiUrl] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
   const { healthState, checkHealth } = useApiHealth();
   
   useEffect(() => {
@@ -165,21 +167,33 @@ const DeploymentReadinessChecker: React.FC = () => {
     if (isExtensionEnvironment()) {
       try {
         let contentScriptResult = false;
+        let debugInfo = {};
         
         // Attempt to communicate with tabs to test content script
         if (chrome.tabs) {
           try {
+            debugInfo = { attemptMade: true };
             await new Promise<void>((resolve, reject) => {
               chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (chrome.runtime.lastError) {
+                  debugInfo.lastError = chrome.runtime.lastError.message;
                   reject(new Error(chrome.runtime.lastError.message));
                   return;
                 }
                 
+                debugInfo.tabsFound = tabs.length;
                 if (tabs.length === 0 || !tabs[0].id) {
+                  debugInfo.noTabsOrTabId = true;
                   resolve();
                   return;
                 }
+                
+                debugInfo.activeTabId = tabs[0].id;
+                debugInfo.activeTabUrl = tabs[0].url;
+                
+                // Check if we're on an eBay page
+                const isEbayPage = tabs[0].url && tabs[0].url.includes('ebay.com/itm/');
+                debugInfo.isEbayPage = isEbayPage;
                 
                 // Try to send a test message to the content script
                 chrome.tabs.sendMessage(
@@ -187,11 +201,13 @@ const DeploymentReadinessChecker: React.FC = () => {
                   { action: "testModeGetListingInfo" },
                   (response) => {
                     if (chrome.runtime.lastError) {
+                      debugInfo.messageError = chrome.runtime.lastError.message;
                       // This may not be an error if we're not on a valid page
                       resolve();
                       return;
                     }
                     
+                    debugInfo.response = response;
                     contentScriptResult = !!response;
                     resolve();
                   }
@@ -199,8 +215,11 @@ const DeploymentReadinessChecker: React.FC = () => {
               });
             });
           } catch (error) {
+            debugInfo.error = error instanceof Error ? error.message : String(error);
             console.error('Error testing content script access:', error);
           }
+        } else {
+          debugInfo.chromeTabsUnavailable = true;
         }
         
         updateCheck('Content Script Access', {
@@ -210,20 +229,23 @@ const DeploymentReadinessChecker: React.FC = () => {
             : 'Content script may not be accessible',
           details: contentScriptResult
             ? 'Communication with content script works'
-            : 'Could not verify content script access. This is expected if not on an eBay listing page.'
+            : 'Could not verify content script access. This is expected if not on an eBay listing page.',
+          debug: debugInfo
         });
       } catch (error) {
         updateCheck('Content Script Access', {
           status: 'error',
           message: 'Error testing content script',
-          details: error instanceof Error ? error.message : 'Unknown error'
+          details: error instanceof Error ? error.message : 'Unknown error',
+          debug: { error: error instanceof Error ? error.stack : String(error) }
         });
       }
     } else {
       updateCheck('Content Script Access', {
         status: 'warning',
         message: 'Cannot test content script in web environment',
-        details: 'Content script testing requires extension environment'
+        details: 'Content script testing requires extension environment',
+        debug: { webEnvironment: true }
       });
     }
     
@@ -326,10 +348,23 @@ const DeploymentReadinessChecker: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Extension Deployment Readiness</CardTitle>
-        <CardDescription>
-          Check if your extension is ready for Chrome Web Store submission
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Extension Deployment Readiness</CardTitle>
+            <CardDescription>
+              Check if your extension is ready for Chrome Web Store submission
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setDebugMode(!debugMode)}
+            className="flex items-center gap-1"
+          >
+            <Code className="h-4 w-4" />
+            {debugMode ? "Hide Debug" : "Debug Mode"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {progress > 0 && (
@@ -356,6 +391,11 @@ const DeploymentReadinessChecker: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{check.message}</p>
                 {check.details && (
                   <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                )}
+                {debugMode && check.debug && (
+                  <pre className="text-xs bg-slate-50 p-2 mt-2 rounded overflow-auto max-h-40">
+                    {JSON.stringify(check.debug, null, 2)}
+                  </pre>
                 )}
               </div>
             </div>

@@ -17,6 +17,7 @@ type FeatureCardProps = {
   buttonLink: string;
   buttonVariant?: "default" | "premium";
   sneakPeek?: boolean;
+  imageSrc?: string;
 };
 
 const FeatureCard = ({ 
@@ -28,10 +29,11 @@ const FeatureCard = ({
   buttonText,
   buttonLink,
   buttonVariant = "default",
-  sneakPeek = false
+  sneakPeek = false,
+  imageSrc
 }: FeatureCardProps) => (
   <Card className={cn(
-    "h-full flex flex-col hover:shadow-lg transition-shadow border-2 border-muted relative",
+    "h-full flex flex-col hover:shadow-lg transition-shadow border-2 border-muted relative overflow-hidden",
     premium && "border-blue-200"
   )}>
     {sneakPeek && (
@@ -42,7 +44,13 @@ const FeatureCard = ({
       </div>
     )}
     
-    <CardHeader className="pb-2">
+    {imageSrc && (
+      <div className="absolute inset-0 opacity-10">
+        <img src={imageSrc} alt={title} className="w-full h-full object-cover" />
+      </div>
+    )}
+    
+    <CardHeader className="pb-2 relative z-10">
       <div className="mb-2 flex items-center gap-2">
         {premium ? (
           <Badge variant="premium" className="text-xs font-medium">
@@ -67,10 +75,10 @@ const FeatureCard = ({
         <CardTitle>{title}</CardTitle>
       </div>
     </CardHeader>
-    <CardContent className="flex-grow">
+    <CardContent className="flex-grow relative z-10">
       <CardDescription className="text-base">{description}</CardDescription>
     </CardContent>
-    <CardFooter>
+    <CardFooter className="relative z-10">
       <Button asChild variant={buttonVariant} className="w-full">
         <Link to={buttonLink}>{buttonText}</Link>
       </Button>
@@ -89,7 +97,8 @@ const FeaturesSection = () => {
       buttonText: "Try Price Check",
       buttonLink: "/extension",
       buttonVariant: "default" as const,
-      sneakPeek: false
+      sneakPeek: false,
+      imageSrc: "/price-check.png"
     },
     {
       title: "Negotiate",
@@ -100,7 +109,8 @@ const FeaturesSection = () => {
       buttonText: "Start Negotiating",
       buttonLink: "/extension",
       buttonVariant: "default" as const,
-      sneakPeek: false
+      sneakPeek: false,
+      imageSrc: "/negotiation-assistance.png"
     },
     {
       title: "Auction Snipe",
@@ -111,7 +121,8 @@ const FeaturesSection = () => {
       buttonText: "Upgrade to Premium",
       buttonLink: "/auth",
       buttonVariant: "premium" as const,
-      sneakPeek: true
+      sneakPeek: true,
+      imageSrc: "/auction-sniping.png"
     },
     {
       title: "Arbitrage Finder",
@@ -122,7 +133,8 @@ const FeaturesSection = () => {
       buttonText: "Upgrade to Premium",
       buttonLink: "/auth",
       buttonVariant: "premium" as const,
-      sneakPeek: true
+      sneakPeek: true,
+      imageSrc: "/arbitrage-search.png"
     }
   ];
 
@@ -147,6 +159,7 @@ const FeaturesSection = () => {
               buttonLink={feature.buttonLink}
               buttonVariant={feature.buttonVariant}
               sneakPeek={feature.sneakPeek}
+              imageSrc={feature.imageSrc}
             />
           ))}
         </div>

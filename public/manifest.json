@@ -31,11 +31,17 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://*.ebay.com/itm/*"],
+      "matches": [
+        "https://*.ebay.com/itm/*",
+        "https://www.ebay.com/itm/*"
+      ],
       "js": ["browser-polyfill.min.js", "content.js"]
     },
     {
-      "matches": ["https://*.mercari.com/item/*"],
+      "matches": [
+        "https://*.mercari.com/item/*",
+        "https://www.mercari.com/item/*"
+      ],
       "js": ["browser-polyfill.min.js", "mercari-content.js"]
     }
   ],
@@ -50,7 +56,11 @@
         "icon-48-active.png",
         "icon-128-active.png",
         "favicon.ico",
-        "browser-polyfill.min.js"
+        "browser-polyfill.min.js",
+        "price-check.png",
+        "negotiation-assistance.png",
+        "auction-sniping.png",
+        "arbitrage-search.png"
       ],
       "matches": ["<all_urls>"]
     }
