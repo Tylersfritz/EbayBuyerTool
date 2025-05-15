@@ -56,7 +56,6 @@ const ApiStatsDashboard: React.FC = () => {
       toast({
         title: 'Using simulated API stats data',
         description: 'Could not connect to real API, showing example data',
-        duration: 4000,
         variant: 'default'
       });
     }

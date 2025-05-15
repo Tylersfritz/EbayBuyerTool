@@ -1,4 +1,3 @@
-
 import { type ToastActionElement, type ToastProps } from "@/components/ui/toast";
 import * as React from "react";
 
@@ -15,6 +14,7 @@ export interface ToasterToast {
   variant?: "default" | "destructive";
   onOpenChange?: (open: boolean) => void;
   className?: string;
+  duration?: number;
 }
 
 const actionTypes = {
@@ -150,10 +150,13 @@ function toast({ ...props }: ToastParameters) {
     });
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
 
+  // Handle toast duration for auto-dismissal
+  const { duration, ...restProps } = props;
+  
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...restProps,
       id,
       open: true,
       onOpenChange: (open) => {
@@ -161,6 +164,13 @@ function toast({ ...props }: ToastParameters) {
       },
     },
   });
+
+  // If duration is provided, automatically dismiss the toast after the specified time
+  if (duration !== undefined && duration > 0) {
+    setTimeout(() => {
+      dismiss();
+    }, duration);
+  }
 
   return {
     id: id,
