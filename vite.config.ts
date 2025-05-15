@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
               try {
                 JSON.parse(manifestContent);
                 console.log('✅ manifest.json is valid JSON');
-              } catch (jsonError) {
+              } catch (jsonError: any) {
                 console.error('❌ manifest.json is NOT valid JSON:', jsonError.message);
               }
             } catch (err) {
@@ -156,7 +156,7 @@ export default defineConfig(({ mode }) => {
                 const manifestContent = fs.readFileSync('./dist/manifest.json', 'utf8');
                 JSON.parse(manifestContent);
                 console.log('✅ manifest.json in dist is valid JSON');
-              } catch (jsonError) {
+              } catch (jsonError: any) {
                 console.error('❌ manifest.json in dist is NOT valid JSON:', jsonError.message);
               }
             } catch (err) {
@@ -205,3 +205,4 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
+
