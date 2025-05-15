@@ -51,10 +51,10 @@ export async function getCurrentListing(): Promise<ListingInfo | null> {
     // Determine which content script to use based on the URL
     if (url.includes('ebay.com/itm/') || url.match(/ebay\..+\/itm\//)) {
       console.log('eBay listing URL detected');
-      return await getEbayListingInfo(activeTabId);
+      return await getEbayListingInfo(activeTabId, url);
     } else if (url.includes('mercari.com/item/') || url.match(/mercari\..+\/item\//)) {
       console.log('Mercari listing URL detected');
-      return await getMercariListingInfo(activeTabId);
+      return await getMercariListingInfo(activeTabId, url);
     } else {
       console.log('Active tab is not on a supported marketplace listing page');
       toast.warning('Not on a supported marketplace listing page', {
@@ -96,7 +96,7 @@ async function testContentScriptAccess(tabId: number): Promise<boolean> {
 /**
  * Get listing information from eBay
  */
-async function getEbayListingInfo(tabId: number): Promise<ListingInfo> {
+async function getEbayListingInfo(tabId: number, url: string): Promise<ListingInfo> {
   try {
     const browser = getBrowserAPI();
     
@@ -119,7 +119,8 @@ async function getEbayListingInfo(tabId: number): Promise<ListingInfo> {
     
     return {
       title,
-      currentPrice: price,
+      currentPrice: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01,
+      price: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01, // Legacy field
       seller,
       condition,
       shipping,
@@ -129,7 +130,8 @@ async function getEbayListingInfo(tabId: number): Promise<ListingInfo> {
       buyItNowPrice: listingType?.hasBuyItNow ? price : undefined,
       itemId,
       itemSpecifics,
-      platform: 'ebay'
+      platform: 'ebay',
+      itemUrl: url
     };
   } catch (error) {
     console.error('Error getting eBay listing info:', error);
@@ -143,7 +145,7 @@ async function getEbayListingInfo(tabId: number): Promise<ListingInfo> {
 /**
  * Get listing information from Mercari
  */
-async function getMercariListingInfo(tabId: number): Promise<ListingInfo> {
+async function getMercariListingInfo(tabId: number, url: string): Promise<ListingInfo> {
   try {
     const browser = getBrowserAPI();
     
@@ -164,13 +166,15 @@ async function getMercariListingInfo(tabId: number): Promise<ListingInfo> {
     
     return {
       title,
-      currentPrice: price,
+      currentPrice: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01,
+      price: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01, // Legacy field
       seller,
       condition,
       shipping,
       isAuction: false, // Mercari doesn't have auctions
       itemId,
-      platform: 'mercari'
+      platform: 'mercari',
+      itemUrl: url
     };
   } catch (error) {
     console.error('Error getting Mercari listing info:', error);

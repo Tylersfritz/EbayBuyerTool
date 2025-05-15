@@ -4,15 +4,18 @@
 
 import { PriceCheckResponse } from '@/components/priceCheck/types/priceCheckTypes';
 import { toast } from "@/components/ui/sonner";
+import { mockPriceCheckApi } from './priceApiClient';
 
 // Type definition for the parameters sent to the price-check endpoint
 export interface PriceCheckParams {
   itemName: string;
   model?: string;
   brand?: string;
+  category?: string;
   condition?: string;
   premium: boolean;
   itemId?: string; // Added to support direct item lookup
+  itemSpecifics?: Record<string, string>;
 }
 
 // Re-export the PriceCheckResponse type for backward compatibility
@@ -31,7 +34,9 @@ const API_CONFIG = {
 
 /**
  * Fetches price check data from the price-check API endpoint
- * @param params - Parameters for the price check (itemName, model, brand, condition, premium)
+ * Enhanced to better utilize item specifics data from the Browse API
+ * 
+ * @param params - Parameters for the price check 
  * @returns Promise resolving to the PriceCheckResponse
  * @throws Error if the API request fails
  */

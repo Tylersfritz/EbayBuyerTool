@@ -35,6 +35,13 @@ interface ContentScriptDebugInfo {
   [key: string]: any; // Allow additional properties
 }
 
+// Define Chrome Tab interface to handle URL property correctly
+interface ChromeTab {
+  id?: number;
+  url?: string;
+  [key: string]: any;
+}
+
 const DeploymentReadinessChecker: React.FC = () => {
   const [checks, setChecks] = useState<CheckResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -189,7 +196,7 @@ const DeploymentReadinessChecker: React.FC = () => {
           try {
             debugInfo.attemptMade = true;
             await new Promise<void>((resolve, reject) => {
-              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              chrome.tabs.query({ active: true, currentWindow: true }, (tabs: ChromeTab[]) => {
                 if (chrome.runtime.lastError) {
                   debugInfo.lastError = chrome.runtime.lastError.message || '';
                   reject(new Error(chrome.runtime.lastError.message));
@@ -205,7 +212,7 @@ const DeploymentReadinessChecker: React.FC = () => {
                 
                 const activeTab = tabs[0];
                 debugInfo.activeTabId = activeTab.id;
-                debugInfo.activeTabUrl = activeTab.url;
+                debugInfo.activeTabUrl = activeTab.url; // Now properly typed
                 
                 // Check if we're on an eBay page
                 const isEbayPage = activeTab.url && activeTab.url.includes('ebay.com/itm/');

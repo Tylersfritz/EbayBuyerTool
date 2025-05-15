@@ -1,9 +1,12 @@
-
 // This file is kept in sync with the original in pages/api/price-check.cjs
 
 import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
 
-export function extractItemSearchParams({ itemName, itemSpecifics }: { 
+/**
+ * Extracts search parameters from item information
+ * Prioritizes item specifics like brand and model for more accurate search results
+ */
+export function extractItemSearchParams({ itemName, itemSpecifics, condition }: { 
   itemName: string, 
   itemSpecifics?: Record<string, string> | null,
   condition?: string
@@ -11,6 +14,7 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
   // Extract key information from item specifics to improve search
   let brand = '';
   let model = '';
+  let category = '';
   
   if (itemSpecifics) {
     // Look for brand with multiple possible key names
@@ -28,6 +32,14 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
         break;
       }
     }
+
+    // Look for category with multiple possible key names
+    for (const key of ['Category', 'Type', 'Product Type', 'Item Type']) {
+      if (itemSpecifics[key]) {
+        category = itemSpecifics[key];
+        break;
+      }
+    }
   }
   
   // Construct search term, prioritizing brand and model if available
@@ -38,7 +50,8 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
   return {
     searchTerm,
     brand,
-    model
+    model,
+    category
   };
 }
 
@@ -91,4 +104,17 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
       warning: 'This is sample data for preview purposes only'
     }
   };
+}
+
+/**
+ * Enhanced version of the price check API client
+ * This implementation prioritizes:
+ * 1. Direct item lookup using itemId when available
+ * 2. Search by item specifics (brand, model) when available
+ * 3. Search by title as a fallback
+ */
+export async function enhancedPriceCheck(params: PriceCheckParams): Promise<PriceCheckResponse> {
+  // Implementation will be in the server-side code
+  // This function is just a placeholder for the client-side interface
+  return mockPriceCheckApi(params);
 }

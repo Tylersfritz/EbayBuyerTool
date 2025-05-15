@@ -30,7 +30,7 @@ export interface PriceCheckResponse {
 
 export interface ListingInfo {
   title: string;
-  currentPrice: number | string;
+  currentPrice: number;
   seller?: string;
   condition?: string;
   shipping?: number | string;
@@ -50,11 +50,14 @@ export interface ListingInfo {
   watchers?: number;
   originalPrice?: number;
   discountPercentage?: number;
-  // Added for backward compatibility with older code
+  itemUrl?: string; // Add itemUrl property for the SnipeForm component
+  // Legacy fields - these will be removed in a future version but keep for compatibility
+  price?: number;
   listingType?: {
     isAuction?: boolean;
     bidsCount?: number;
     endTime?: string;
+    hasBuyItNow?: boolean;
   };
 }
 

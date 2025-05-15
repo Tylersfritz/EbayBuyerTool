@@ -38,13 +38,17 @@ export function usePriceCheck(isPremium: boolean) {
       try {
         const listingData = await getCurrentListing();
         console.log('Raw listing data from getCurrentListing:', JSON.stringify(listingData, null, 2));
-        if (listingData && listingData.title && (listingData.price !== undefined || listingData.currentPrice !== undefined)) {
+        if (listingData && listingData.title && (listingData.currentPrice !== undefined || listingData.price !== undefined)) {
           console.log('Listing data valid, testMode: false');
-          const currentPrice = listingData.currentPrice !== undefined ? listingData.currentPrice : listingData.price;
-          const safePrice = Math.max(currentPrice || 0, 0.01);
+          // Handle both currentPrice and legacy price field
+          const price = listingData.currentPrice !== undefined 
+            ? listingData.currentPrice 
+            : (typeof listingData.price === 'number' ? listingData.price : 0);
+          const safePrice = Math.max(price || 0, 0.01);
           const listingInfo: ListingInfo = {
             title: listingData.title || '',
             currentPrice: safePrice,
+            price: safePrice, // Add legacy price field for backward compatibility
             buyItNowPrice: listingData.buyItNowPrice,
             seller: listingData.seller,
             condition: listingData.condition,
@@ -54,12 +58,14 @@ export function usePriceCheck(isPremium: boolean) {
             isAuction: listingData.isAuction || (listingData.listingType?.isAuction),
             itemSpecifics: listingData.itemSpecifics,
             itemId: listingData.itemId,
+            platform: listingData.platform,
+            itemUrl: listingData.itemUrl,
             // Ensure we include both new and legacy fields for backward compatibility
-            price: safePrice,
             listingType: {
               isAuction: listingData.isAuction || (listingData.listingType?.isAuction),
               bidsCount: listingData.bids || (listingData.listingType?.bidsCount),
-              endTime: listingData.timeRemaining || (listingData.listingType?.endTime)
+              endTime: listingData.timeRemaining || (listingData.listingType?.endTime),
+              hasBuyItNow: listingData.buyItNowPrice !== undefined
             }
           };
           setState(prev => ({
@@ -71,15 +77,17 @@ export function usePriceCheck(isPremium: boolean) {
         } else {
           console.log('No valid listing data, entering test mode');
           const mockData = isAuctionMode ? mockAuctionListingInfo : mockListingInfo;
-          const safeMockData = {
+          // Ensure all numeric fields are actually numbers
+          const currentPrice = typeof mockData.currentPrice === 'number' ? mockData.currentPrice : parseFloat(String(mockData.currentPrice)) || 0.01;
+          const safeMockData: ListingInfo = {
             ...mockData,
-            currentPrice: Math.max(mockData.currentPrice, 0.01),
-            // Add legacy fields
-            price: Math.max(mockData.currentPrice, 0.01),
+            currentPrice: Math.max(currentPrice, 0.01),
+            price: Math.max(currentPrice, 0.01), // Legacy field
             listingType: {
               isAuction: mockData.isAuction,
               bidsCount: mockData.bids,
-              endTime: mockData.timeRemaining
+              endTime: mockData.timeRemaining,
+              hasBuyItNow: mockData.buyItNowPrice !== undefined
             }
           };
           setState(prev => ({
@@ -97,15 +105,17 @@ export function usePriceCheck(isPremium: boolean) {
       } catch (error) {
         console.error('Error fetching listing info:', error);
         const mockData = isAuctionMode ? mockAuctionListingInfo : mockListingInfo;
-        const safeMockData = {
+        // Ensure all numeric fields are actually numbers
+        const currentPrice = typeof mockData.currentPrice === 'number' ? mockData.currentPrice : parseFloat(String(mockData.currentPrice)) || 0.01;
+        const safeMockData: ListingInfo = {
           ...mockData,
-          currentPrice: Math.max(mockData.currentPrice, 0.01),
-          // Add legacy fields
-          price: Math.max(mockData.currentPrice, 0.01),
+          currentPrice: Math.max(currentPrice, 0.01),
+          price: Math.max(currentPrice, 0.01), // Legacy field
           listingType: {
             isAuction: mockData.isAuction,
             bidsCount: mockData.bids,
-            endTime: mockData.timeRemaining
+            endTime: mockData.timeRemaining,
+            hasBuyItNow: mockData.buyItNowPrice !== undefined
           }
         };
         setState(prev => ({
