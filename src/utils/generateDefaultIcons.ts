@@ -116,16 +116,23 @@ export function downloadGeneratedIcons() {
 export function saveIconsToExtension() {
   const icons = generateDefaultIcons();
   
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+  // Fix: Check for chrome.runtime existence in a safer way
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
     console.log('Attempting to save icons to extension storage...');
     // We can't directly write to filesystem from extension, but we can store in extension storage
     try {
-      chrome.storage.local.set({
-        generatedIcons: icons
-      }, () => {
-        console.log('Icons saved to extension storage.');
-      });
-      return true;
+      // Check if storage API is available first
+      if (chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({
+          generatedIcons: icons
+        }, () => {
+          console.log('Icons saved to extension storage.');
+        });
+        return true;
+      } else {
+        console.warn('Chrome storage API not available');
+        return false;
+      }
     } catch (e) {
       console.error('Failed to save icons to extension:', e);
       return false;

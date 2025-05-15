@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { generateDefaultIcons, downloadGeneratedIcons } from '@/utils/generateDefaultIcons';
 import { toast } from "@/components/ui/use-toast";
 
@@ -36,7 +37,7 @@ const IconGenerator: React.FC = () => {
     toast({
       title: "Icons Downloaded",
       description: "Save these files to your project's public folder",
-      duration: 3000
+      duration: 5000
     });
   };
   
@@ -48,35 +49,44 @@ const IconGenerator: React.FC = () => {
           Generate missing icons required for the extension to load properly
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-3 gap-4">
-        {icons && (
-          <>
-            <div className="flex flex-col items-center">
-              <h3 className="text-sm font-medium mb-2">16x16</h3>
-              <img 
-                src={icons.icon16} 
-                alt="16x16 icon" 
-                className="border border-gray-200 w-16 h-16" 
-              />
-            </div>
-            <div className="flex flex-col items-center">
-              <h3 className="text-sm font-medium mb-2">48x48</h3>
-              <img 
-                src={icons.icon48} 
-                alt="48x48 icon" 
-                className="border border-gray-200 w-16 h-16" 
-              />
-            </div>
-            <div className="flex flex-col items-center">
-              <h3 className="text-sm font-medium mb-2">128x128</h3>
-              <img 
-                src={icons.icon128} 
-                alt="128x128 icon" 
-                className="border border-gray-200 w-16 h-16" 
-              />
-            </div>
-          </>
-        )}
+      <CardContent className="space-y-4">
+        <Alert variant="warning" className="bg-amber-50 border-amber-200 mb-4">
+          <AlertTitle>Manifest Loading Error Fix</AlertTitle>
+          <AlertDescription>
+            If you're seeing a "Manifest file is missing or unreadable" error, download these icons and place them in your project's public folder, then rebuild the extension.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="grid grid-cols-3 gap-4">
+          {icons && (
+            <>
+              <div className="flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">16x16</h3>
+                <img 
+                  src={icons.icon16} 
+                  alt="16x16 icon" 
+                  className="border border-gray-200 w-16 h-16" 
+                />
+              </div>
+              <div className="flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">48x48</h3>
+                <img 
+                  src={icons.icon48} 
+                  alt="48x48 icon" 
+                  className="border border-gray-200 w-16 h-16" 
+                />
+              </div>
+              <div className="flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">128x128</h3>
+                <img 
+                  src={icons.icon128} 
+                  alt="128x128 icon" 
+                  className="border border-gray-200 w-16 h-16" 
+                />
+              </div>
+            </>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={handleGenerateIcons}>

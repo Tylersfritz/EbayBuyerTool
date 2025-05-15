@@ -1,8 +1,6 @@
 
 // This utility generates the Smart Deal Shield logo for our Chrome extension
 
-import { ShieldCheck } from 'lucide-react';
-
 export function generateIcons() {
   // Generate the 16x16 icon
   const canvas16 = document.createElement('canvas');
