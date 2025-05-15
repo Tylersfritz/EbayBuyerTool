@@ -1,4 +1,3 @@
-
 // src/components/priceCheck/CurrentListingCard.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,10 +40,16 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numericPrice);
   };
 
-  const isPriceBelowMarket = listingInfo.currentPrice < (listingInfo.buyItNowPrice || 0);
+  // Helper function to convert any price value to a number
+  const toNumber = (value: number | string | undefined): number => {
+    if (value === undefined) return 0;
+    return typeof value === 'string' ? parseFloat(value) || 0 : value;
+  };
+
+  const isPriceBelowMarket = toNumber(listingInfo.currentPrice) < toNumber(listingInfo.buyItNowPrice);
   const isOnSale = !listingInfo.isAuction && 
                  !!listingInfo.originalPrice && 
-                 listingInfo.currentPrice < listingInfo.originalPrice;
+                 toNumber(listingInfo.currentPrice) < toNumber(listingInfo.originalPrice);
   
   const calculateTimeProgress = (): number => {
     if (!listingInfo.timeRemaining) return 0;
