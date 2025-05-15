@@ -1,470 +1,114 @@
 
 /**
- * Browser API Abstraction Layer for DealHavenAI
- * This utility provides a cross-browser compatible way to access browser extension APIs
+ * Utility functions for browser extension environment
  */
 
-// Safely import the polyfill
-let browser: any;
-try {
-  // Only import in extension environments
-  // This conditional import prevents the error in web environments
-  if (typeof chrome !== 'undefined' && chrome?.runtime && 'id' in chrome.runtime) {
-    // We're in a browser extension context
-    browser = window?.browser || window?.chrome;
-  } else {
-    // Mock browser for development mode
-    browser = null;
-  }
-} catch (e) {
-  console.warn('Browser polyfill import failed:', e);
-  browser = null;
-}
-
-/**
- * Detect which browser the extension is running in
- */
-export function detectBrowser(): 'chrome' | 'firefox' | 'edge' | 'safari' | 'unknown' {
-  const userAgent = navigator.userAgent.toLowerCase();
-  
-  if (userAgent.includes('firefox')) {
-    return 'firefox';
-  } else if (userAgent.includes('edg/')) {
-    return 'edge';
-  } else if (userAgent.includes('chrome')) {
-    return 'chrome';
-  } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-    // Chrome includes Safari in UA string, so check for Safari without Chrome
-    return 'safari';
-  }
-  
-  return 'unknown';
-}
-
-/**
- * Check if we're in an extension environment
- */
+// Check if the current environment is a browser extension
 export function isExtensionEnvironment(): boolean {
-  return typeof chrome !== 'undefined' && !!chrome.runtime && 'id' in chrome.runtime;
+  return !!window.chrome?.runtime || !!window.browser?.runtime;
 }
 
-/**
- * Browser API wrapper that provides a consistent interface across browsers
- */
-export const browserAPI = {
-  /**
-   * Storage API
-   */
-  storage: {
-    /**
-     * Get items from storage
-     */
-    get: async <T>(keys: string | string[] | object): Promise<T> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          // Mock implementation for non-extension environments
-          const result: Record<string, any> = {};
+// Safe access to browser API with fallback to chrome API or mock
+export function getBrowserAPI() {
+  // For actual extension environment
+  if (typeof window !== 'undefined') {
+    // Use the browser object if available (Firefox, etc.)
+    if (window.browser) {
+      return window.browser;
+    }
+    
+    // Use chrome object as fallback (Chrome, Edge, etc.)
+    if (window.chrome?.runtime) {
+      return window.chrome;
+    }
+  }
+  
+  // For preview/web environment, return a mock implementation
+  return createMockBrowserAPI();
+}
+
+// Create a mock browser API for preview/web environment
+function createMockBrowserAPI() {
+  console.log('Using mock browser API for web/preview environment');
+  
+  // Simple in-memory storage
+  const storageData: Record<string, any> = {};
+  
+  return {
+    runtime: {
+      id: 'mock-extension-id',
+      sendMessage: (message: any) => {
+        console.log('Mock sendMessage:', message);
+        return Promise.resolve({ success: true, mock: true });
+      },
+      onMessage: {
+        addListener: (callback: Function) => {
+          console.log('Mock onMessage listener added');
+        },
+        removeListener: (callback: Function) => {}
+      }
+    },
+    storage: {
+      local: {
+        get: async (keys: string | string[] | null) => {
+          console.log('Mock storage.get:', keys);
+          if (keys === null) {
+            return { ...storageData };
+          }
           
           if (typeof keys === 'string') {
-            const value = localStorage.getItem(keys);
-            result[keys] = value ? JSON.parse(value) : null;
-          } else if (Array.isArray(keys)) {
-            keys.forEach(key => {
-              const value = localStorage.getItem(key);
-              result[key] = value ? JSON.parse(value) : null;
-            });
-          } else {
-            Object.keys(keys as object).forEach(key => {
-              const value = localStorage.getItem(key);
-              result[key] = value ? JSON.parse(value) : null;
-            });
+            return { [keys]: storageData[keys] };
           }
           
-          return result as unknown as T;
-        }
-        
-        // Use the actual browser API if available
-        if (browser && browser.storage) {
-          const result = await browser.storage.local.get(keys);
-          return result as unknown as T;
-        }
-        
-        throw new Error('Browser storage API not available');
-      } catch (error) {
-        console.error('Error getting from storage:', error);
-        throw error;
-      }
-    },
-    
-    /**
-     * Set items in storage
-     */
-    set: async (items: object): Promise<void> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          // Mock implementation for non-extension environments
-          Object.entries(items).forEach(([key, value]) => {
-            localStorage.setItem(key, JSON.stringify(value));
+          const result: Record<string, any> = {};
+          keys.forEach(key => {
+            result[key] = storageData[key];
           });
+          
+          return result;
+        },
+        set: async (items: Record<string, any>) => {
+          console.log('Mock storage.set:', items);
+          Object.assign(storageData, items);
+          return;
+        },
+        remove: async (keys: string | string[]) => {
+          console.log('Mock storage.remove:', keys);
+          const keysToRemove = typeof keys === 'string' ? [keys] : keys;
+          
+          keysToRemove.forEach(key => {
+            delete storageData[key];
+          });
+          
           return;
         }
-        
-        // Use the actual browser API if available
-        if (browser && browser.storage) {
-          await browser.storage.local.set(items);
-          return;
-        }
-        
-        throw new Error('Browser storage API not available');
-      } catch (error) {
-        console.error('Error setting to storage:', error);
-        throw error;
+      }
+    },
+    tabs: {
+      query: async (queryInfo: any) => {
+        console.log('Mock tabs.query:', queryInfo);
+        return [{ id: 1, url: 'https://www.example.com', title: 'Example Page' }];
+      },
+      sendMessage: async (tabId: number, message: any) => {
+        console.log(`Mock tabs.sendMessage to tab ${tabId}:`, message);
+        return { success: true, mock: true };
       }
     }
-  },
-  
-  /**
-   * Runtime API
-   */
-  runtime: {
-    /**
-     * Send a message to the extension
-     */
-    sendMessage: async <T>(message: any): Promise<T> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          console.log('Mock sendMessage:', message);
-          return { success: true, mock: true } as unknown as T;
-        }
-        
-        if (browser && browser.runtime) {
-          return await browser.runtime.sendMessage(message) as T;
-        }
-        
-        throw new Error('Browser runtime API not available');
-      } catch (error) {
-        console.error('Error sending message:', error);
-        throw error;
-      }
-    },
-    
-    /**
-     * Add a listener for messages
-     */
-    addMessageListener: (callback: (message: any, sender: any, sendResponse: any) => boolean | void) => {
-      if (!isExtensionEnvironment()) {
-        console.log('Mock message listener registered');
-        return;
-      }
-      
-      if (browser && browser.runtime) {
-        browser.runtime.onMessage.addListener(callback);
-      }
-    },
-    
-    /**
-     * Get the extension's URL
-     */
-    getURL: (path: string): string => {
-      if (!isExtensionEnvironment()) {
-        return path; // Just return the path in non-extension environments
-      }
-      
-      if (browser && browser.runtime && browser.runtime.getURL) {
-        return browser.runtime.getURL(path);
-      }
-      
-      return path;
-    }
-  },
-  
-  /**
-   * Tabs API
-   */
-  tabs: {
-    /**
-     * Query for tabs
-     */
-    query: async (queryInfo: { active: boolean, currentWindow: boolean }): Promise<any[]> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          return [{ id: 1, url: window.location.href, title: document.title }];
-        }
-        
-        if (browser && browser.tabs) {
-          return await browser.tabs.query(queryInfo);
-        }
-        
-        throw new Error('Browser tabs API not available');
-      } catch (error) {
-        console.error('Error querying tabs:', error);
-        throw error;
-      }
-    },
-    
-    /**
-     * Send a message to a tab
-     */
-    sendMessage: async <T>(tabId: number, message: any): Promise<T> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          console.log(`Mock sendMessage to tab ${tabId}:`, message);
-          return { success: true, mock: true } as unknown as T;
-        }
-        
-        if (browser && browser.tabs) {
-          return await browser.tabs.sendMessage(tabId, message) as T;
-        }
-        
-        throw new Error('Browser tabs API not available');
-      } catch (error) {
-        console.error(`Error sending message to tab ${tabId}:`, error);
-        throw error;
-      }
-    },
-    
-    /**
-     * Create a new tab
-     */
-    create: async (createProperties: any): Promise<any> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          console.log('Mock create tab:', createProperties);
-          window.open(createProperties.url, '_blank');
-          return { id: 999, url: createProperties.url };
-        }
-        
-        if (browser && browser.tabs) {
-          return await browser.tabs.create(createProperties);
-        }
-        
-        throw new Error('Browser tabs API not available');
-      } catch (error) {
-        console.error('Error creating tab:', error);
-        throw error;
-      }
-    }
-  },
-  
-  /**
-   * Action API (browserAction in older versions)
-   */
-  action: {
-    /**
-     * Set the icon for the extension
-     */
-    setIcon: async (details: {
-      path: {
-        [size: string]: string;
-      };
-      tabId?: number;
-    }): Promise<void> => {
-      try {
-        if (!isExtensionEnvironment()) {
-          console.log('Mock setIcon:', details);
-          return;
-        }
-        
-        // Handle Firefox's browserAction vs Chrome's action
-        if (browser) {
-          if (detectBrowser() === 'firefox' && browser.browserAction) {
-            await browser.browserAction.setIcon(details);
-          } else if (browser.action) {
-            await browser.action.setIcon(details);
-          }
-        }
-      } catch (error) {
-        console.error('Error setting icon:', error);
-        // Fail gracefully for this non-critical function
-        console.warn('Icon setting not supported in this browser');
-      }
-    }
-  },
-  
-  /**
-   * Helper for determining if we're in an extension environment
-   */
-  isExtensionEnvironment
-};
-
-/**
- * For backwards compatibility with existing code that uses chrome.*
- * This allows a gradual migration to the browserAPI abstraction
- */
-export function getBrowserAPI() {
-  // For environments where the browser API might not be available (like development)
-  if (!isExtensionEnvironment()) {
-    // Return mock implementations for development environment
-    return {
-      storage: {
-        local: {
-          get: (keys: string | string[] | object, callback: (items: any) => void) => {
-            const mockData: Record<string, any> = {
-              dealHavenAIFirstUse: 'completed',
-              dealHavenAIPremium: 'inactive',
-              priceCheckHistory: [],
-              affiliateClicks: []
-            };
-            
-            setTimeout(() => {
-              // Mock implementation using localStorage for development
-              let result: Record<string, any> = {};
-              
-              if (typeof keys === 'string') {
-                const value = localStorage.getItem(keys);
-                result[keys] = value ? JSON.parse(value) : mockData[keys] || null;
-              } else if (Array.isArray(keys)) {
-                keys.forEach(key => {
-                  const value = localStorage.getItem(key);
-                  result[key] = value ? JSON.parse(value) : mockData[key] || null;
-                });
-              } else {
-                Object.keys(keys as object).forEach(key => {
-                  const value = localStorage.getItem(key);
-                  result[key] = value ? JSON.parse(value) : mockData[key] || null;
-                });
-              }
-              
-              callback(result);
-            }, 0);
-          },
-          set: (items: Record<string, any>, callback?: () => void) => {
-            setTimeout(() => {
-              // Mock implementation using localStorage for development
-              Object.keys(items).forEach(key => {
-                localStorage.setItem(key, JSON.stringify(items[key]));
-              });
-              if (callback) callback();
-            }, 0);
-          }
-        }
-      },
-      runtime: {
-        sendMessage: (message: any, callback?: (response: any) => void) => {
-          console.log('Mock sendMessage:', message);
-          if (callback) setTimeout(() => callback({ success: true, mock: true }), 0);
-        },
-        onMessage: {
-          addListener: (callback: any) => {
-            console.log('Mock addListener registered');
-          }
-        },
-        getURL: (path: string) => path
-      },
-      tabs: {
-        query: (queryInfo: any, callback: (tabs: any[]) => void) => {
-          setTimeout(() => {
-            callback([{ id: 1, url: window.location.href, title: document.title }]);
-          }, 0);
-        },
-        sendMessage: (tabId: number, message: any, callback?: (response: any) => void) => {
-          console.log(`Mock sendMessage to tab ${tabId}:`, message);
-          if (callback) setTimeout(() => callback({ success: true, mock: true }), 0);
-        },
-        create: (createProperties: any, callback?: (tab: any) => void) => {
-          console.log('Mock create tab:', createProperties);
-          window.open(createProperties.url, '_blank');
-          if (callback) setTimeout(() => callback({ id: 999, url: createProperties.url }), 0);
-        }
-      },
-      action: {
-        setIcon: () => {}
-      }
-    };
-  }
-  
-  // If we're in an actual extension environment and have the browser object
-  if (browser) {
-    // Return compatibility layer for chrome.* API in extension environment
-    return {
-      storage: {
-        local: {
-          get: (keys: string | string[] | object, callback: (items: any) => void) => {
-            if (browser.storage) {
-              browser.storage.local.get(keys).then(callback);
-            } else {
-              callback({});
-            }
-          },
-          set: (items: object, callback?: () => void) => {
-            if (browser.storage) {
-              browser.storage.local.set(items).then(() => {
-                if (callback) callback();
-              });
-            } else if (callback) {
-              callback();
-            }
-          }
-        }
-      },
-      runtime: {
-        sendMessage: (message: any, callback?: (response: any) => void) => {
-          if (browser.runtime) {
-            browser.runtime.sendMessage(message).then(response => {
-              if (callback) callback(response);
-            });
-          } else if (callback) {
-            callback(null);
-          }
-        },
-        onMessage: {
-          addListener: browser.runtime ? browser.runtime.onMessage.addListener : (() => {})
-        },
-        getURL: browser.runtime ? browser.runtime.getURL : ((path: string) => path)
-      },
-      tabs: {
-        query: (queryInfo: { active: boolean, currentWindow: boolean }, callback: (tabs: any[]) => void) => {
-          if (browser.tabs) {
-            browser.tabs.query(queryInfo).then(callback);
-          } else {
-            callback([]);
-          }
-        },
-        sendMessage: (tabId: number, message: any, callback?: (response: any) => void) => {
-          if (browser.tabs) {
-            browser.tabs.sendMessage(tabId, message).then(response => {
-              if (callback) callback(response);
-            });
-          } else if (callback) {
-            callback(null);
-          }
-        },
-        create: (createProperties: any, callback?: (tab: any) => void) => {
-          if (browser.tabs) {
-            browser.tabs.create(createProperties).then(tab => {
-              if (callback) callback(tab);
-            });
-          } else if (callback) {
-            callback(null);
-          }
-        }
-      },
-      action: {
-        setIcon: (details: any) => {
-          if (browser.action) {
-            browserAPI.action.setIcon(details);
-          }
-        }
-      }
-    };
-  }
-  
-  // Fallback for when neither extension environment nor browser object are available
-  return {
-    storage: { local: { get: (_: any, cb: any) => cb({}), set: (_: any, cb?: any) => cb && cb() } },
-    runtime: { 
-      sendMessage: (_: any, cb?: any) => cb && cb({}),
-      onMessage: { addListener: () => {} },
-      getURL: (path: string) => path
-    },
-    tabs: { 
-      query: (_: any, cb: any) => cb([]), 
-      sendMessage: (_: any, __: any, cb?: any) => cb && cb({}),
-      create: (_: any, cb?: any) => cb && cb({})
-    },
-    action: { setIcon: () => {} }
   };
 }
 
-// Export a ready-to-use instance
-export const extensionAPI = getBrowserAPI();
+// Helper to safely check if we're in a browser environment
+export const isBrowser = typeof window !== 'undefined';
+
+// Helper to determine if the current environment is localhost/development
+export function isLocalhost(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const hostname = window.location.hostname;
+  return (
+    hostname === 'localhost' || 
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.endsWith('.local')
+  );
+}

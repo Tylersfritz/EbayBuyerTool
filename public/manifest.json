@@ -27,7 +27,6 @@
   "host_permissions": [
     "https://*.ebay.com/*",
     "https://*.mercari.com/*",
-    "https://ebay-buyer-tool-zp52.vercel.app/*",
     "https://*.vercel.app/*"
   ],
   "content_scripts": [
