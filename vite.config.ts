@@ -6,9 +6,15 @@ import { componentTagger } from "lovable-tagger";
 import fs from 'fs';
 
 export default defineConfig(({ mode }) => {
+  console.log('🚀 Starting Vite config with mode:', mode);
+  console.log('📂 Current working directory:', process.cwd());
+  
   // Create public directory if it doesn't exist
   if (!fs.existsSync('./public')) {
     fs.mkdirSync('./public');
+    console.log('✅ Created missing public directory');
+  } else {
+    console.log('✅ Public directory exists');
   }
 
   // Handle browser polyfill copy without modifying package.json
@@ -22,6 +28,8 @@ export default defineConfig(({ mode }) => {
     if (!fs.existsSync(destPath)) {
       fs.copyFileSync(browserPolyfillPath, destPath);
       console.log('✅ Copied browser-polyfill.min.js to public folder');
+    } else {
+      console.log('✅ browser-polyfill.min.js already exists in public folder');
     }
   } else {
     console.warn('⚠️ Could not find browser-polyfill.min.js in node_modules');
@@ -37,6 +45,22 @@ export default defineConfig(({ mode }) => {
         buildStart() {
           console.log('🚀 Copying critical extension files early in the build process...');
           
+          // Enhanced manifest debugging
+          console.log('🔍 PUBLIC DIRECTORY CONTENTS:');
+          try {
+            const files = fs.readdirSync('./public');
+            files.forEach(file => {
+              try {
+                const stats = fs.statSync(path.join('./public', file));
+                console.log(`   - ${file} (${stats.size} bytes)`);
+              } catch (err) {
+                console.log(`   - ${file} (error getting size)`);
+              }
+            });
+          } catch (err) {
+            console.error('❌ Error reading public directory:', err.message);
+          }
+          
           // Debug logs to check if manifest.json exists
           console.log('🔍 Checking for public/manifest.json at:', path.resolve('./public/manifest.json'));
           console.log('🔍 Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
@@ -46,6 +70,7 @@ export default defineConfig(({ mode }) => {
             try {
               const manifestContent = fs.readFileSync('./public/manifest.json', 'utf8');
               console.log('📝 First few characters of manifest.json:', manifestContent.substring(0, 50) + '...');
+              console.log('📊 manifest.json size:', manifestContent.length, 'bytes');
               
               // Validate JSON format
               try {
@@ -57,11 +82,14 @@ export default defineConfig(({ mode }) => {
             } catch (err) {
               console.error('❌ Error reading manifest.json:', err);
             }
+          } else {
+            console.error('❌ CRITICAL ERROR: public/manifest.json NOT FOUND!');
           }
           
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
+            console.log('✅ Created dist directory');
           }
           
           // Critical files that must be copied early
@@ -205,4 +233,3 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
-
