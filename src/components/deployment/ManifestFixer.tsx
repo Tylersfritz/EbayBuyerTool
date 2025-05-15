@@ -83,7 +83,7 @@ const ManifestFixer: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert variant="info" className="bg-blue-50 border-blue-200 text-blue-800">
+        <Alert variant="warning" className="bg-blue-50 border-blue-200 text-blue-800">
           <AlertTitle>What This Does</AlertTitle>
           <AlertDescription>
             <p className="mb-2">This tool helps resolve the "Manifest file is missing or unreadable" error by:</p>

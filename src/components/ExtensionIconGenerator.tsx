@@ -6,7 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateDefaultIcons, downloadGeneratedIcons } from '@/utils/generateDefaultIcons';
 import { toast } from '@/hooks/use-toast';
-import { DownloadCloud, RefreshCw, PaintBrush } from 'lucide-react';
+import { DownloadCloud, RefreshCw, Paintbrush } from 'lucide-react';
+
+type IconStyle = 'gradient' | 'flat' | 'outline';
 
 const ExtensionIconGenerator: React.FC = () => {
   const [icons, setIcons] = useState<{
@@ -20,7 +22,7 @@ const ExtensionIconGenerator: React.FC = () => {
   
   const [primaryColor, setPrimaryColor] = useState('#1EAEDB');
   const [secondaryColor, setSecondaryColor] = useState('#ffffff');
-  const [iconStyle, setIconStyle] = useState('gradient');
+  const [iconStyle, setIconStyle] = useState<IconStyle>('gradient');
   
   useEffect(() => {
     // Generate icons when component mounts
@@ -29,7 +31,16 @@ const ExtensionIconGenerator: React.FC = () => {
   
   const generateIcons = () => {
     const generatedIcons = generateDefaultIcons(primaryColor, secondaryColor, iconStyle);
-    setIcons(generatedIcons);
+    if (generatedIcons.icon16Active && generatedIcons.icon48Active && generatedIcons.icon128Active) {
+      setIcons(generatedIcons as {
+        icon16: string;
+        icon48: string;
+        icon128: string;
+        icon16Active: string;
+        icon48Active: string;
+        icon128Active: string;
+      });
+    }
   };
   
   useEffect(() => {

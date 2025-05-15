@@ -15,11 +15,15 @@ const IconGenerator: React.FC = () => {
     icon16: string;
     icon48: string;
     icon128: string;
+    icon16Active?: string;
+    icon48Active?: string;
+    icon128Active?: string;
   } | null>(null);
   
   useEffect(() => {
     // Generate icons when component mounts
-    setIcons(generateDefaultIcons());
+    const generatedIcons = generateDefaultIcons();
+    setIcons(generatedIcons);
   }, []);
   
   const handleGenerateIcons = () => {
@@ -33,12 +37,14 @@ const IconGenerator: React.FC = () => {
   };
   
   const handleDownloadIcons = () => {
-    downloadGeneratedIcons();
-    toast({
-      title: "Icons Downloaded",
-      description: "Save these files to your project's public folder",
-      duration: 5000
-    });
+    if (icons) {
+      downloadGeneratedIcons(icons);
+      toast({
+        title: "Icons Downloaded",
+        description: "Save these files to your project's public folder",
+        duration: 5000
+      });
+    }
   };
   
   return (
