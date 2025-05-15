@@ -1,147 +1,94 @@
 
-interface IconSet {
-  icon16: string;
-  icon48: string;
-  icon128: string;
-  icon16Active?: string;
-  icon48Active?: string;
-  icon128Active?: string;
-}
+/**
+ * Utility for generating extension icons and downloading them
+ */
 
 /**
- * Generate a set of default icons for the extension
- * Returns data URLs that can be used as src for image elements
+ * Generate default icons for the extension with optional color customization
+ * @param {string} color - Optional color for the icon (hex code)
+ * @returns Object containing data URLs for each icon size
  */
-export function generateDefaultIcons(
-  primaryColor: string = '#1EAEDB',
-  secondaryColor: string = '#ffffff',
-  style: 'gradient' | 'flat' | 'outline' = 'gradient'
-): IconSet {
-  // Function to create an icon canvas with the specified size
-  const createIconCanvas = (size: number, active: boolean = false) => {
+export const generateDefaultIcons = (color: string = '#1EAEDB') => {
+  // Icon sizes
+  const sizes = [16, 48, 128];
+  const icons: Record<string, string> = {};
+  
+  // Generate an icon for each size
+  sizes.forEach(size => {
+    // Create a canvas
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, size, size);
-
-    // Adjust colors for active state
-    const mainColor = active ? '#ff6b00' : primaryColor;
     
-    // Calculate dimensions
-    const padding = Math.max(2, Math.floor(size * 0.1));
-    const innerSize = size - (padding * 2);
-    
-    if (style === 'gradient') {
-      // Create gradient background
-      const gradient = ctx.createLinearGradient(0, 0, size, size);
-      gradient.addColorStop(0, mainColor);
-      gradient.addColorStop(1, active ? '#ff9d4d' : '#0a617a');
+    if (ctx) {
+      // Draw background
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, size, size);
       
-      // Draw rounded rectangle with gradient
-      ctx.fillStyle = gradient;
-      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
+      // Draw shield shape (simplified for small icons)
+      ctx.fillStyle = 'white';
+      const shieldWidth = size * 0.7;
+      const shieldHeight = size * 0.8;
+      const shieldX = (size - shieldWidth) / 2;
+      const shieldY = (size - shieldHeight) / 2;
+      
+      // Draw a simple shield
+      ctx.beginPath();
+      ctx.moveTo(shieldX, shieldY);
+      ctx.lineTo(shieldX + shieldWidth, shieldY);
+      ctx.lineTo(shieldX + shieldWidth, shieldY + shieldHeight * 0.7);
+      ctx.lineTo(shieldX + shieldWidth / 2, shieldY + shieldHeight);
+      ctx.lineTo(shieldX, shieldY + shieldHeight * 0.7);
+      ctx.closePath();
       ctx.fill();
       
-      // Draw letter D in the center
-      ctx.fillStyle = secondaryColor;
-      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('D', size / 2, size / 2);
-    } 
-    else if (style === 'flat') {
-      // Flat style
-      ctx.fillStyle = mainColor;
-      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
-      ctx.fill();
+      // Add checkmark for larger icons
+      if (size >= 48) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size * 0.08;
+        ctx.beginPath();
+        ctx.moveTo(shieldX + shieldWidth * 0.3, shieldY + shieldHeight * 0.5);
+        ctx.lineTo(shieldX + shieldWidth * 0.45, shieldY + shieldHeight * 0.65);
+        ctx.lineTo(shieldX + shieldWidth * 0.7, shieldY + shieldHeight * 0.35);
+        ctx.stroke();
+      }
       
-      // Draw letter D in the center
-      ctx.fillStyle = secondaryColor;
-      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('D', size / 2, size / 2);
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL('image/png');
+      icons[`icon${size}`] = dataUrl;
     }
-    else if (style === 'outline') {
-      // Outline style
-      ctx.strokeStyle = mainColor;
-      ctx.lineWidth = Math.max(2, Math.floor(size * 0.05));
-      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
-      ctx.stroke();
-      
-      // Draw letter D in the center
-      ctx.fillStyle = mainColor;
-      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('D', size / 2, size / 2);
-    }
-    
-    return canvas;
-  };
-  
-  // Helper for drawing rounded rectangles
-  const roundRect = (
-    ctx: CanvasRenderingContext2D, 
-    x: number, 
-    y: number, 
-    width: number, 
-    height: number, 
-    radius: number
-  ) => {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.arcTo(x + width, y, x + width, y + height, radius);
-    ctx.arcTo(x + width, y + height, x, y + height, radius);
-    ctx.arcTo(x, y + height, x, y, radius);
-    ctx.arcTo(x, y, x + width, y, radius);
-    ctx.closePath();
-  };
-  
-  // Create icons of different sizes
-  const icon16Canvas = createIconCanvas(16);
-  const icon48Canvas = createIconCanvas(48);
-  const icon128Canvas = createIconCanvas(128);
-  
-  // Create active state icons
-  const icon16ActiveCanvas = createIconCanvas(16, true);
-  const icon48ActiveCanvas = createIconCanvas(48, true);
-  const icon128ActiveCanvas = createIconCanvas(128, true);
+  });
   
   return {
-    icon16: icon16Canvas.toDataURL('image/png'),
-    icon48: icon48Canvas.toDataURL('image/png'),
-    icon128: icon128Canvas.toDataURL('image/png'),
-    icon16Active: icon16ActiveCanvas.toDataURL('image/png'),
-    icon48Active: icon48ActiveCanvas.toDataURL('image/png'),
-    icon128Active: icon128ActiveCanvas.toDataURL('image/png'),
+    icon16: icons.icon16 || '',
+    icon48: icons.icon48 || '',
+    icon128: icons.icon128 || ''
   };
-}
+};
 
 /**
- * Download the generated icons as PNG files
+ * Download the generated icons
+ * @param icons - Object containing data URLs for each icon size
+ * @param suffix - Optional suffix to append to filenames (e.g., '-active')
  */
-export function downloadGeneratedIcons(icons: IconSet): void {
-  const downloadImage = (dataUrl: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  // Download the icons
-  downloadImage(icons.icon16, 'icon-16.png');
-  downloadImage(icons.icon48, 'icon-48.png');
-  downloadImage(icons.icon128, 'icon-128.png');
-  
-  // Download active icons if available
-  if (icons.icon16Active) downloadImage(icons.icon16Active, 'icon-16-active.png');
-  if (icons.icon48Active) downloadImage(icons.icon48Active, 'icon-48-active.png');
-  if (icons.icon128Active) downloadImage(icons.icon128Active, 'icon-128-active.png');
-}
+export const downloadGeneratedIcons = (
+  icons: Record<string, string>,
+  suffix: string = ''
+) => {
+  // Create download links for each icon
+  Object.entries(icons).forEach(([key, dataUrl]) => {
+    if (!dataUrl) return;
+    
+    // Extract size from key (e.g., 'icon16' -> '16')
+    const size = key.replace(/[^0-9]/g, '');
+    
+    // Create a temporary anchor element
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `icon-${size}${suffix}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+};
