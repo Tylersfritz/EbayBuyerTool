@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,23 @@ interface CheckResult {
   status: 'success' | 'warning' | 'error' | 'pending';
   message: string;
   details?: string;
-  debug?: any;
+  debug?: Record<string, any>; // Properly type the debug property
+}
+
+// Define interface for the debug object to fix TypeScript errors
+interface ContentScriptDebugInfo {
+  attemptMade?: boolean;
+  lastError?: string;
+  tabsFound?: number;
+  noTabsOrTabId?: boolean;
+  activeTabId?: number;
+  activeTabUrl?: string;
+  isEbayPage?: boolean;
+  messageError?: string;
+  response?: any;
+  error?: string;
+  chromeTabsUnavailable?: boolean;
+  [key: string]: any; // Allow additional properties
 }
 
 const DeploymentReadinessChecker: React.FC = () => {
@@ -167,16 +182,16 @@ const DeploymentReadinessChecker: React.FC = () => {
     if (isExtensionEnvironment()) {
       try {
         let contentScriptResult = false;
-        let debugInfo = {};
+        let debugInfo: ContentScriptDebugInfo = {}; // Use the typed interface here
         
         // Attempt to communicate with tabs to test content script
         if (chrome.tabs) {
           try {
-            debugInfo = { attemptMade: true };
+            debugInfo.attemptMade = true;
             await new Promise<void>((resolve, reject) => {
               chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (chrome.runtime.lastError) {
-                  debugInfo.lastError = chrome.runtime.lastError.message;
+                  debugInfo.lastError = chrome.runtime.lastError.message || '';
                   reject(new Error(chrome.runtime.lastError.message));
                   return;
                 }
@@ -188,30 +203,35 @@ const DeploymentReadinessChecker: React.FC = () => {
                   return;
                 }
                 
-                debugInfo.activeTabId = tabs[0].id;
-                debugInfo.activeTabUrl = tabs[0].url;
+                const activeTab = tabs[0];
+                debugInfo.activeTabId = activeTab.id;
+                debugInfo.activeTabUrl = activeTab.url;
                 
                 // Check if we're on an eBay page
-                const isEbayPage = tabs[0].url && tabs[0].url.includes('ebay.com/itm/');
+                const isEbayPage = activeTab.url && activeTab.url.includes('ebay.com/itm/');
                 debugInfo.isEbayPage = isEbayPage;
                 
                 // Try to send a test message to the content script
-                chrome.tabs.sendMessage(
-                  tabs[0].id,
-                  { action: "testModeGetListingInfo" },
-                  (response) => {
-                    if (chrome.runtime.lastError) {
-                      debugInfo.messageError = chrome.runtime.lastError.message;
-                      // This may not be an error if we're not on a valid page
+                if (activeTab.id) {
+                  chrome.tabs.sendMessage(
+                    activeTab.id,
+                    { action: "testModeGetListingInfo" },
+                    (response) => {
+                      if (chrome.runtime.lastError) {
+                        debugInfo.messageError = chrome.runtime.lastError.message || '';
+                        // This may not be an error if we're not on a valid page
+                        resolve();
+                        return;
+                      }
+                      
+                      debugInfo.response = response;
+                      contentScriptResult = !!response;
                       resolve();
-                      return;
                     }
-                    
-                    debugInfo.response = response;
-                    contentScriptResult = !!response;
-                    resolve();
-                  }
-                );
+                  );
+                } else {
+                  resolve();
+                }
               });
             });
           } catch (error) {
@@ -304,7 +324,7 @@ const DeploymentReadinessChecker: React.FC = () => {
     
     await new Promise(resolve => setTimeout(resolve, 300));
   };
-  
+
   // Check 6: Resource Optimization
   const checkResourceOptimization = async () => {
     // Simulate a resource optimization check

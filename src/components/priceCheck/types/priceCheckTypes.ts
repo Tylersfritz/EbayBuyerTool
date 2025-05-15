@@ -1,4 +1,3 @@
-
 // src/components/priceCheck/types/priceCheckTypes.ts
 
 export interface DataQuality {
@@ -31,18 +30,17 @@ export interface PriceCheckResponse {
 
 export interface ListingInfo {
   title: string;
-  currentPrice: number;
-  price?: number; // Added for backward compatibility
-  buyItNowPrice?: number;
+  currentPrice: number | string;
   seller?: string;
   condition?: string;
-  shipping?: string;
-  timeRemaining?: string;
-  bids?: number;
+  shipping?: number | string;
   isAuction?: boolean;
-  itemSpecifics?: Record<string, string>;
+  bids?: number;
+  timeRemaining?: string;
+  buyItNowPrice?: number | string;
   itemId?: string;
-  itemUrl?: string; // Added to fix SnipeForm error
+  itemSpecifics?: Record<string, string>;
+  platform?: 'ebay' | 'mercari' | string; // Add platform property
   quantityAvailable?: number;
   returnPolicy?: string;
   sellerFeedbackScore?: number;
