@@ -1,27 +1,30 @@
 
 # Building the DealHaven Extension
 
-Since `package.json` is marked as a read-only file in this environment, we've created standalone scripts to build the extension without modifying it.
+This document provides detailed instructions for building the DealHaven Chrome extension.
 
 ## Quick Build Instructions
 
-### Option 1: Using Node directly
+### One-Step Build Process (Recommended)
 
-1. Run the build extension script:
-   ```
-   node public/run-build-extension.js
-   ```
+Simply run the full build script:
+```
+node public/run-build-extension.js
+```
 
-2. The built extension will be in the `dist` directory.
+This script will:
+1. Prepare all required files using fix-manifest.js
+2. Build the React application using Vite
+3. Copy all extension files to the dist directory
+4. Validate the build to ensure all required files are present
 
-3. Load the extension in Chrome:
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in the top right corner)
-   - Click "Load unpacked" and select the `dist` directory
+The built extension will be in the `dist` directory.
 
-### Option 2: Using NPX (if you have issues with the first method)
+### Manual Build Process (Step by Step)
 
-1. First, run the fix-manifest script:
+If you prefer to run each step individually:
+
+1. First, ensure all required files exist:
    ```
    node public/fix-manifest.js
    ```
@@ -31,28 +34,54 @@ Since `package.json` is marked as a read-only file in this environment, we've cr
    npx vite build
    ```
 
-3. Ensure all critical files are copied to the dist directory:
+3. Copy all extension files to dist:
    ```
    node public/build-extension.js
    ```
 
+4. Validate the build:
+   ```
+   node public/extension-validation.js
+   ```
+
+## Loading the Extension in Chrome
+
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in the top right corner)
+3. Click "Load unpacked" and select the `dist` directory
+
 ## Troubleshooting
 
-If you encounter any issues:
+If the extension doesn't load properly:
 
-1. Check that all critical files exist in the `public` directory:
-   - `manifest.json`
-   - `icon-16.png`, `icon-48.png`, `icon-128.png`
-   - `browser-polyfill.min.js`
-   - `content.js`, `background.js`, `mercari-content.js`
+1. Check for errors in the Chrome Extensions page
+2. Run the validation script to see if any files are missing:
+   ```
+   node public/extension-validation.js
+   ```
 
-2. Look for error messages in the build output.
+3. Common issues:
+   - Missing icon files
+   - Invalid manifest.json
+   - Missing content scripts or background scripts
+   - Path issues with resources in the manifest
 
-3. If the extension doesn't load in Chrome, check the console in Chrome DevTools for error messages.
+4. For file path issues:
+   - Make sure there's no `<base href="/">` tag in index.html
+   - Ensure all paths in manifest.json are relative to the extension root
+   - Check that all referenced files actually exist in the dist folder
 
-4. You can generate missing icons using the Extension Icon Generator in the deployment dashboard.
+## Icon Generation
 
-## Manual Verification
+If you need to generate proper extension icons:
+
+1. Use the Extension Icon Generator in the deployment dashboard
+2. Or manually create icon files in the following sizes:
+   - 16x16: icon-16.png
+   - 48x48: icon-48.png
+   - 128x128: icon-128.png
+
+## Build Verification
 
 After building, verify that these files are present in the `dist` directory:
 - `manifest.json`
@@ -60,3 +89,10 @@ After building, verify that these files are present in the `dist` directory:
 - Icon files: `icon-16.png`, `icon-48.png`, `icon-128.png`
 - Extension scripts: `content.js`, `background.js`, `mercari-content.js`
 - Browser polyfill: `browser-polyfill.min.js`
+
+You can run the validation script to check for all required files:
+```
+node public/extension-validation.js
+```
+
+Happy building!
