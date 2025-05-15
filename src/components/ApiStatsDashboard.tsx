@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCcw, Database, Clock, AlertCircle, WifiOff, BarChart2, LineChart } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/components/ui/use-toast";
 import { useApiStats } from './apiStats/hooks/useApiStats';
 import { ApiErrorType } from '@/api/apiClient';
 import { Switch } from "@/components/ui/switch";
@@ -32,22 +31,33 @@ const ApiStatsDashboard: React.FC = () => {
     try {
       const success = await clearCache();
       if (success) {
-        toast.success('Cache cleared successfully');
+        toast({
+          title: 'Cache cleared successfully',
+          variant: 'default'
+        });
       } else {
-        toast.error('Failed to clear cache');
+        toast({
+          title: 'Failed to clear cache',
+          variant: 'destructive'
+        });
       }
     } catch (err) {
       console.error('Error clearing cache:', err);
-      toast.error('Failed to clear cache');
+      toast({
+        title: 'Failed to clear cache',
+        variant: 'destructive'
+      });
     }
   };
   
   // Display a warning for test mode
   React.useEffect(() => {
     if (testMode && !error) {
-      toast.warning('Using simulated API stats data', {
+      toast({
+        title: 'Using simulated API stats data',
         description: 'Could not connect to real API, showing example data',
-        duration: 4000
+        duration: 4000,
+        variant: 'default'
       });
     }
   }, [testMode, error]);
@@ -55,13 +65,17 @@ const ApiStatsDashboard: React.FC = () => {
   const handleTestModeToggle = (checked: boolean) => {
     if (checked) {
       enableTestMode();
-      toast.info('Test mode enabled', {
-        description: 'Using mock data for API statistics'
+      toast({
+        title: 'Test mode enabled',
+        description: 'Using mock data for API statistics',
+        variant: 'default'
       });
     } else {
       disableTestMode();
-      toast.info('Test mode disabled', {
-        description: 'Attempting to use real API data'
+      toast({
+        title: 'Test mode disabled',
+        description: 'Attempting to use real API data',
+        variant: 'default'
       });
     }
   };

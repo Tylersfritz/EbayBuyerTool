@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { ApiStats } from '../types';
 import { getApiStats, getMockApiStats, getRotatingMockStats } from '@/api/apiStatsService';
@@ -105,8 +106,10 @@ export function useApiStats(options: UseApiStatsOptions | boolean = {}) {
           console.log('Falling back to test mode with mock data due to network issue');
           
           // Show a toast to inform the user
-          toast.warning("Using simulated API stats data", {
-            description: "Could not connect to API server, showing example data"
+          toast({
+            title: "Using simulated API stats data",
+            description: "Could not connect to API server, showing example data",
+            variant: "default"
           });
           
           let mockData;
@@ -163,8 +166,10 @@ export function useApiStats(options: UseApiStatsOptions | boolean = {}) {
       const mockData = getMockApiStats(clearCache);
       
       // Show a toast to inform the user
-      toast.warning("Could not connect to API stats server", {
-        description: "Showing example data instead"
+      toast({
+        title: "Could not connect to API stats server",
+        description: "Showing example data instead",
+        variant: "destructive"
       });
       
       setState(prev => ({
