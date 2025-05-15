@@ -117,17 +117,23 @@ async function getEbayListingInfo(tabId: number, url: string): Promise<ListingIn
     
     console.log('Received listing info from content script:', response);
     
+    // Parse price values ensuring they're numbers or preserving as strings if needed
+    const parsedPrice = typeof price === 'number' ? price : parseFloat(String(price)) || 0.01;
+    const parsedBuyItNowPrice = listingType?.hasBuyItNow ? 
+      (typeof price === 'number' ? price : parseFloat(String(price)) || undefined) : 
+      undefined;
+    
     return {
       title,
-      currentPrice: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01,
-      price: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01, // Legacy field
+      currentPrice: parsedPrice,
+      price: parsedPrice, // Legacy field
       seller,
       condition,
       shipping,
       isAuction: listingType?.isAuction || false,
       bids: listingType?.bidsCount,
       timeRemaining: listingType?.endTime,
-      buyItNowPrice: listingType?.hasBuyItNow ? price : undefined,
+      buyItNowPrice: parsedBuyItNowPrice,
       itemId,
       itemSpecifics,
       platform: 'ebay',
@@ -164,10 +170,13 @@ async function getMercariListingInfo(tabId: number, url: string): Promise<Listin
     
     const { title, price, seller, condition, shipping, itemId } = response;
     
+    // Parse price ensuring it's a number
+    const parsedPrice = typeof price === 'number' ? price : parseFloat(String(price)) || 0.01;
+    
     return {
       title,
-      currentPrice: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01,
-      price: typeof price === 'number' ? price : parseFloat(String(price)) || 0.01, // Legacy field
+      currentPrice: parsedPrice,
+      price: parsedPrice, // Legacy field
       seller,
       condition,
       shipping,

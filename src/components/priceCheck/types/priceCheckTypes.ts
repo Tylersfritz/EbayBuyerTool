@@ -14,7 +14,7 @@ export interface DataQuality {
 
 export interface PriceCheckResponse {
   averagePrice: number;
-  marketRate?: number; // Added to fix type errors
+  marketRate?: number;
   itemCount: number;
   priceRange: { min: number; max: number };
   priceHistory?: { date: string; price: number }[];
@@ -40,7 +40,7 @@ export interface ListingInfo {
   buyItNowPrice?: number | string;
   itemId?: string;
   itemSpecifics?: Record<string, string>;
-  platform?: 'ebay' | 'mercari' | string; // Add platform property
+  platform?: 'ebay' | 'mercari' | string;
   quantityAvailable?: number;
   returnPolicy?: string;
   sellerFeedbackScore?: number;
@@ -50,7 +50,7 @@ export interface ListingInfo {
   watchers?: number;
   originalPrice?: number;
   discountPercentage?: number;
-  itemUrl?: string; // Add itemUrl property for the SnipeForm component
+  itemUrl?: string;
   // Legacy fields - these will be removed in a future version but keep for compatibility
   price?: number;
   listingType?: {

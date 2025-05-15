@@ -7,30 +7,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-
-interface ListingInfo {
-  title: string;
-  currentPrice: number;
-  buyItNowPrice?: number;
-  originalPrice?: number;
-  seller?: string;
-  condition?: string;
-  shipping?: string;
-  timeRemaining?: string;
-  bids?: number;
-  bidderCount?: number;
-  isAuction?: boolean;
-  image?: string;
-  itemSpecifics?: Record<string, string>;
-  itemId?: string;
-  quantityAvailable?: number;
-  returnPolicy?: string;
-  sellerFeedbackScore?: number;
-  sellerPositivePercentage?: number;
-  discountPercentage?: number;
-  watchers?: number;
-  firstBidTime?: string;
-}
+import { ListingInfo } from '@/components/priceCheck/types/priceCheckTypes';
 
 interface CurrentListingCardProps {
   listingInfo: ListingInfo;
@@ -58,186 +35,9 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     }
   }, [listingInfo, listingInfoKey]);
 
-  useEffect(() => {
-    console.log('useEffect triggered for CurrentListingCard with listingInfo:', listingInfo);
-
-    // Skip extraction if listingInfo is not fully populated
-    if (!listingInfo || !listingInfo.title || !listingInfo.itemId) {
-      console.log('Skipping extraction: listingInfo is incomplete');
-      return;
-    }
-
-    // Function to extract Item Specifics from the DOM
-    const extractItemSpecificsFromDOM = (): Record<string, string> => {
-      const specifics: Record<string, string> = {};
-      try {
-        console.log('Attempting to extract Item Specifics from DOM...');
-        // Target eBay's "Item Specifics" section more precisely
-        const specificsSection = document.querySelector('.ux-layout-section--item-specifics') || 
-                                document.querySelector('#viTabs_0_is') || 
-                                document.querySelector('.itemAttr') ||
-                                document.querySelector('[data-testid="ux-section"]');
-        console.log('Specifics Section Element:', specificsSection ? specificsSection.outerHTML : 'Not found');
-
-        if (specificsSection) {
-          // Look for label-value pairs within the section
-          const labels = specificsSection.querySelectorAll('.ux-labels-values__labels, .attrLabels, [class*="label"], [class*="title"]');
-          console.log(`Found ${labels.length} potential label elements`);
-
-          labels.forEach((labelElement, index) => {
-            const labelText = labelElement.textContent?.trim().toLowerCase().replace(':', '');
-            // Find the corresponding value element (sibling or child)
-            const parent = labelElement.closest('.ux-labels-values__row, tr, div');
-            const valueElement = parent?.querySelector('.ux-labels-values__values, td:not(.attrLabels), span:not([class*="label"]), div:not([class*="label"])');
-            const value = valueElement?.textContent?.trim();
-
-            console.log(`Label ${index}: Text=${labelText}, Value=${value}`);
-            if (labelText && value) {
-              if (labelText.includes('brand') || labelText.includes('make')) {
-                specifics['Brand'] = value;
-              } else if (labelText.includes('model')) {
-                specifics['Model'] = value;
-              } else if (labelText.includes('condition')) {
-                specifics['Condition'] = value;
-              }
-            }
-          });
-
-          if (Object.keys(specifics).length === 0) {
-            console.log('No specifics found with targeted selectors');
-          }
-        } else {
-          console.log('No specifics section found with any selector');
-        }
-      } catch (error) {
-        console.error('Error extracting Item Specifics from DOM:', error);
-      }
-      return specifics;
-    };
-
-    // Use MutationObserver to watch for DOM changes if specifics are not immediately available
-    const observeDOMForSpecifics = (callback: () => void) => {
-      const targetNode = document.body;
-      const observer = new MutationObserver((mutations, observer) => {
-        console.log('DOM changed, checking for specifics...');
-        const specificsSection = document.querySelector('.ux-layout-section--item-specifics') || 
-                                document.querySelector('#viTabs_0_is') || 
-                                document.querySelector('.itemAttr') ||
-                                document.querySelector('[data-testid="ux-section"]');
-        if (specificsSection) {
-          console.log('Specifics section detected via MutationObserver');
-          observer.disconnect(); // Stop observing once found
-          callback();
-        }
-      });
-
-      observer.observe(targetNode, { childList: true, subtree: true });
-
-      // Timeout to stop observing after 10 seconds
-      setTimeout(() => {
-        observer.disconnect();
-        console.log('MutationObserver timed out after 10 seconds');
-        callback(); // Proceed even if specifics not found
-      }, 10000);
-
-      return observer;
-    };
-
-    // Extract and cache Item Specifics with retry logic
-    const attemptExtraction = async (maxAttempts = 5, retryDelay = 500) => {
-      let attempts = 0;
-      let extractedSpecifics: Record<string, string> = {};
-
-      while (attempts < maxAttempts) {
-        console.log(`Extraction attempt ${attempts + 1}/${maxAttempts}`);
-        extractedSpecifics = extractItemSpecificsFromDOM();
-        if (Object.keys(extractedSpecifics).length > 0) {
-          break; // Exit loop if specifics are found
-        }
-        attempts++;
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-      }
-
-      if (Object.keys(extractedSpecifics).length === 0) {
-        console.log('No specifics found after retries, setting up MutationObserver...');
-        observeDOMForSpecifics(() => {
-          const finalSpecifics = extractItemSpecificsFromDOM();
-          setCachedSpecifics(finalSpecifics);
-          console.log('Captured Item Specifics via MutationObserver:', finalSpecifics);
-          proceedWithPriceCheck(finalSpecifics);
-        });
-      } else {
-        setCachedSpecifics(extractedSpecifics);
-        console.log('Captured Item Specifics from DOM:', extractedSpecifics);
-        proceedWithPriceCheck(extractedSpecifics);
-      }
-    };
-
-    // Process the extracted specifics and fetch the market rate
-    const proceedWithPriceCheck = (extractedSpecifics: Record<string, string>) => {
-      console.log('Listing Info from getCurrentListing:', listingInfo);
-
-      // Extract relevant specifics for the API call
-      let make = extractedSpecifics['Brand'] || extractedSpecifics['Make'] || listingInfo.itemSpecifics?.['Brand'] || listingInfo.itemSpecifics?.['Make'] || '';
-      let model = extractedSpecifics['Model'] || listingInfo.itemSpecifics?.['Model'] || '';
-      let condition = extractedSpecifics['Condition'] || listingInfo.condition || 'USED'; // Default to USED if not provided
-      const itemName = listingInfo.title || '';
-
-      // Clean condition value (remove duplication like "UsedUsed")
-      condition = condition.replace(/UsedUsed/, 'USED');
-
-      // Fallback: Derive make and model from title if not found in specifics
-      if (!make || !model) {
-        const titleWords = itemName.toLowerCase().split(/\s+/);
-        if (titleWords.includes('apple')) {
-          make = 'Apple';
-          if (titleWords.includes('watch') && titleWords.includes('series')) {
-            const seriesIndex = titleWords.indexOf('series');
-            model = `Series ${titleWords[seriesIndex + 1]}`; // e.g., "Series 7"
-          }
-        } else if (titleWords.includes('fitbit')) {
-          make = 'Fitbit';
-          if (titleWords.includes('charge')) {
-            const chargeIndex = titleWords.indexOf('charge');
-            model = `Charge ${titleWords[chargeIndex + 1]}`; // e.g., "Charge 5"
-          }
-        } else if (titleWords.includes('pokemon')) {
-          make = 'Pokemon';
-          model = 'Card';
-        }
-      }
-
-      // Log the derived specifics for confirmation
-      console.log('Derived Specifics for API Call:', { itemName, make, model, condition });
-
-      // Call the /api/price-check endpoint with the extracted specifics
-      const fetchMarketRate = async () => {
-        try {
-          const response = await fetch(
-            `/api/price-check?itemName=${encodeURIComponent(itemName)}&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&condition=${encodeURIComponent(condition)}&premium=false`
-          );
-          const data = await response.json();
-          if (data.error) {
-            throw new Error(data.error);
-          }
-          setMarketRate(data.marketRate);
-        } catch (error) {
-          console.error('Error fetching market rate:', error.message);
-          setMarketRate(null);
-        }
-      };
-
-      fetchMarketRate();
-    };
-
-    // Start the extraction process
-    attemptExtraction();
-  }, [listingInfoKey]); // Use listingInfoKey to ensure useEffect runs on deep changes
-
-  const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+  const formatPrice = (price: number | string): string => {
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numericPrice);
   };
 
   const isPriceBelowMarket = listingInfo.currentPrice < (listingInfo.buyItNowPrice || 0);
@@ -302,6 +102,16 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
     ? "border-l-4 border-l-amber-500" 
     : "border-l-4 border-l-blue-500";
 
+  // Helper function to safely convert price values
+  const safePrice = (price?: number | string): number => {
+    if (price === undefined) return 0.01;
+    return typeof price === 'string' ? parseFloat(price) || 0.01 : price;
+  };
+  
+  const currentPrice = safePrice(listingInfo.currentPrice);
+  const buyItNowPrice = listingInfo.buyItNowPrice ? safePrice(listingInfo.buyItNowPrice) : 0;
+  const originalPrice = listingInfo.originalPrice ? safePrice(listingInfo.originalPrice) : 0;
+
   return (
     <Card className={`mb-2 ${cardBorderClass}`}>
       <CardContent className="p-3">
@@ -352,7 +162,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                     "font-semibold text-sm",
                     isOnSale ? "text-green-600" : "text-gray-900"
                   )}>
-                    {formatPrice(listingInfo.currentPrice)}
+                    {formatPrice(currentPrice)}
                   </span>
                 </div>
                 
@@ -361,129 +171,130 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                     <span className="text-xs font-medium text-gray-600">Original:</span>
                     <div className="flex items-center">
                       <span className="text-xs line-through text-gray-500 mr-1">
-                        {formatPrice(listingInfo.originalPrice)}
+                        {formatPrice(originalPrice)}
                       </span>
                       <Badge variant="success" className="text-xs px-1 py-0 bg-green-100 text-green-800">
                         -{Math.round(listingInfo.discountPercentage || 
-                          ((listingInfo.originalPrice - listingInfo.currentPrice) / listingInfo.originalPrice * 100))}%
+                          ((originalPrice - currentPrice) / originalPrice * 100))}%
                       </Badge>
                     </div>
-                </div>
-              )}
-              
-              {listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-600">Quantity:</span>
-                  <span className="text-xs font-medium">
-                    {listingInfo.quantityAvailable} available
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-          
-          {listingInfo.isAuction && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-gray-600 flex items-center">
-                  <Gavel className="h-3 w-3 mr-1 text-amber-500" />
-                  Current bid:
-                </span>
-                <span className={cn(
-                  "font-semibold text-sm",
-                  isPriceBelowMarket ? "text-green-600" : "text-gray-900"
-                )}>
-                  {formatPrice(listingInfo.currentPrice)}
-                </span>
-              </div>
-              
-              {listingInfo.buyItNowPrice && (
+                  </div>
+                )}
+                
+                {listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium text-gray-600">Quantity:</span>
+                    <span className="text-xs font-medium">
+                      {listingInfo.quantityAvailable} available
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+            
+            {listingInfo.isAuction && (
+              <>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-600 flex items-center">
-                    <TagIcon className="h-3 w-3 mr-1 text-blue-500" />
-                    Buy It Now:
+                    <Gavel className="h-3 w-3 mr-1 text-amber-500" />
+                    Current bid:
                   </span>
-                  <span className="text-xs font-medium">
-                    {formatPrice(listingInfo.buyItNowPrice)}
+                  <span className={cn(
+                    "font-semibold text-sm",
+                    isPriceBelowMarket ? "text-green-600" : "text-gray-900"
+                  )}>
+                    {formatPrice(currentPrice)}
                   </span>
                 </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-gray-600 flex items-center">
-                  <Users className="h-3 w-3 mr-1 text-blue-500" />
-                  Bids:
-                </span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center">
-                        <span className="text-xs font-medium">
-                          {listingInfo.bids || 0}
-                        </span>
-                        {listingInfo.bidderCount && listingInfo.bidderCount > 0 && (
-                          <span className="text-xs text-gray-500 ml-1">
-                            ({listingInfo.bidderCount} bidders)
-                          </span>
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="text-xs">
-                        {listingInfo.bids && listingInfo.bids > 5 
-                          ? "Active auction with multiple bidders" 
-                          : "Low bid count - may be a good opportunity"}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              {listingInfo.timeRemaining && (
-                <>
+                
+                {listingInfo.buyItNowPrice && (
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-medium text-gray-600 flex items-center">
-                      <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
-                      Time left:
+                      <TagIcon className="h-3 w-3 mr-1 text-blue-500" />
+                      Buy It Now:
                     </span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className={`text-xs font-medium ${getTimeColor()}`}>
-                            {listingInfo.timeRemaining}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <p className="text-xs">{getTimeTooltip()}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <span className="text-xs font-medium">
+                      {formatPrice(listingInfo.buyItNowPrice)}
+                    </span>
                   </div>
-                  <div className="mt-1">
-                    <Progress 
-                      value={calculateTimeProgress()} 
-                      className="h-1" 
-                      indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
-                                        calculateTimeProgress() > 60 ? "bg-amber-500" : 
-                                        "bg-blue-500"}
-                    />
-                  </div>
-                </>
-              )}
-              
-              {listingInfo.watchers && listingInfo.watchers > 0 && (
+                )}
+                
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-600 flex items-center">
-                    <Eye className="h-3 w-3 mr-1 text-blue-500" />
-                    Watchers:
+                    <Users className="h-3 w-3 mr-1 text-blue-500" />
+                    Bids:
                   </span>
-                  <span className="text-xs font-medium">
-                    {listingInfo.watchers}
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center">
+                          <span className="text-xs font-medium">
+                            {listingInfo.bids || 0}
+                          </span>
+                          {listingInfo.bidderCount && listingInfo.bidderCount > 0 && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({listingInfo.bidderCount} bidders)
+                            </span>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p className="text-xs">
+                          {listingInfo.bids && listingInfo.bids > 5 
+                            ? "Active auction with multiple bidders" 
+                            : "Low bid count - may be a good opportunity"}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-              )}
-            </>
-          )}
+                
+                {listingInfo.timeRemaining && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-600 flex items-center">
+                        <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
+                        Time left:
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`text-xs font-medium ${getTimeColor()}`}>
+                              {listingInfo.timeRemaining}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">{getTimeTooltip()}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="mt-1">
+                      <Progress 
+                        value={calculateTimeProgress()} 
+                        className="h-1" 
+                        indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
+                                              calculateTimeProgress() > 60 ? "bg-amber-500" : 
+                                              "bg-blue-500"}
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {listingInfo.watchers && listingInfo.watchers > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium text-gray-600 flex items-center">
+                      <Eye className="h-3 w-3 mr-1 text-blue-500" />
+                      Watchers:
+                    </span>
+                    <span className="text-xs font-medium">
+                      {listingInfo.watchers}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">

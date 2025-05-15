@@ -1,3 +1,4 @@
+
 // This file is kept in sync with the original in pages/api/price-check.cjs
 
 import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
@@ -6,7 +7,11 @@ import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
  * Extracts search parameters from item information
  * Prioritizes item specifics like brand and model for more accurate search results
  */
-export function extractItemSearchParams({ itemName, itemSpecifics, condition }: { 
+export function extractItemSearchParams({ 
+  itemName, 
+  itemSpecifics, 
+  condition 
+}: { 
   itemName: string, 
   itemSpecifics?: Record<string, string> | null,
   condition?: string
@@ -101,7 +106,12 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
     dataQuality: {
       confidence: 'low',
       sources: ['Mock API (Preview Environment)'],
-      warning: 'This is sample data for preview purposes only'
+      warning: 'This is sample data for preview purposes only',
+      itemSpecifics: {
+        make: params.brand || null,
+        model: params.model || null,
+        category: params.category || null
+      }
     }
   };
 }
@@ -114,7 +124,37 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
  * 3. Search by title as a fallback
  */
 export async function enhancedPriceCheck(params: PriceCheckParams): Promise<PriceCheckResponse> {
-  // Implementation will be in the server-side code
-  // This function is just a placeholder for the client-side interface
-  return mockPriceCheckApi(params);
+  console.log('Enhanced price check called with params:', params);
+  
+  // Extract item specifics if available
+  let { brand, model } = params;
+  
+  if (!brand || !model) {
+    // Try to extract from itemSpecifics
+    if (params.itemSpecifics) {
+      const extracted = extractItemSearchParams({
+        itemName: params.itemName,
+        itemSpecifics: params.itemSpecifics,
+        condition: params.condition
+      });
+      
+      brand = brand || extracted.brand;
+      model = model || extracted.model;
+    }
+  }
+  
+  // Log the enhanced parameters
+  console.log('Enhanced search parameters:', { 
+    itemId: params.itemId, 
+    brand, 
+    model, 
+    itemName: params.itemName 
+  });
+  
+  // For now, use the mock implementation since the server-side code is out of scope
+  return mockPriceCheckApi({
+    ...params,
+    brand,
+    model
+  });
 }
