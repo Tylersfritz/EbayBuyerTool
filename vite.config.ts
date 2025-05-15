@@ -37,6 +37,28 @@ export default defineConfig(({ mode }) => {
         buildStart() {
           console.log('🚀 Copying critical extension files early in the build process...');
           
+          // Debug logs to check if manifest.json exists
+          console.log('🔍 Checking for public/manifest.json at:', path.resolve('./public/manifest.json'));
+          console.log('🔍 Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
+          
+          // Check the content of manifest.json if it exists
+          if (fs.existsSync('./public/manifest.json')) {
+            try {
+              const manifestContent = fs.readFileSync('./public/manifest.json', 'utf8');
+              console.log('📝 First few characters of manifest.json:', manifestContent.substring(0, 50) + '...');
+              
+              // Validate JSON format
+              try {
+                JSON.parse(manifestContent);
+                console.log('✅ manifest.json is valid JSON');
+              } catch (jsonError) {
+                console.error('❌ manifest.json is NOT valid JSON:', jsonError.message);
+              }
+            } catch (err) {
+              console.error('❌ Error reading manifest.json:', err);
+            }
+          }
+          
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
@@ -66,6 +88,14 @@ export default defineConfig(({ mode }) => {
         },
         // Also use closeBundle to ensure files are copied at the end of build
         closeBundle() {
+          // Debug logs for closeBundle
+          console.log('🔍 Final check for public/manifest.json at:', path.resolve('./public/manifest.json'));
+          console.log('🔍 Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
+          
+          if (fs.existsSync('./public/manifest.json')) {
+            console.log('📁 Manifest file stats:', fs.statSync('./public/manifest.json'));
+          }
+          
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
@@ -112,6 +142,29 @@ export default defineConfig(({ mode }) => {
               console.error(`Error copying ${src}:`, error);
               if (critical) criticalError = true;
             }
+          }
+          
+          // Verify manifest.json was properly copied to dist
+          if (fs.existsSync('./dist/manifest.json')) {
+            console.log('✅ Verified manifest.json exists in dist folder');
+            try {
+              const manifestSize = fs.statSync('./dist/manifest.json').size;
+              console.log(`📊 manifest.json in dist is ${manifestSize} bytes`);
+              
+              // Validate the copied manifest
+              try {
+                const manifestContent = fs.readFileSync('./dist/manifest.json', 'utf8');
+                JSON.parse(manifestContent);
+                console.log('✅ manifest.json in dist is valid JSON');
+              } catch (jsonError) {
+                console.error('❌ manifest.json in dist is NOT valid JSON:', jsonError.message);
+              }
+            } catch (err) {
+              console.error('❌ Error verifying manifest.json in dist:', err);
+            }
+          } else {
+            console.error('❌ CRITICAL: manifest.json NOT found in dist folder!');
+            criticalError = true;
           }
           
           if (criticalError) {
