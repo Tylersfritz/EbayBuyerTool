@@ -33,25 +33,35 @@ export default defineConfig(({ mode }) => {
       react(),
       mode === 'development' && componentTagger(),
       {
-        name: 'copy-manifest-files',
-        // Copy manifest files at buildStart to ensure they're available earlier
+        name: 'copy-extension-files-early',
         buildStart() {
+          console.log('🚀 Copying critical extension files early in the build process...');
+          
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
           }
           
-          // Copy manifest.json first for browser extensions
-          console.log('Copying manifest.json to dist directory...');
-          try {
-            if (fs.existsSync('./public/manifest.json')) {
-              fs.copyFileSync('./public/manifest.json', './dist/manifest.json');
-              console.log('✅ Copied manifest.json to dist folder');
-            } else {
-              console.error('❌ manifest.json not found in public folder! Extension will not load.');
+          // Critical files that must be copied early
+          const criticalFiles = [
+            { src: './public/manifest.json', dest: './dist/manifest.json' },
+            { src: './public/icon-16.png', dest: './dist/icon-16.png' },
+            { src: './public/icon-48.png', dest: './dist/icon-48.png' },
+            { src: './public/icon-128.png', dest: './dist/icon-128.png' },
+            { src: './public/browser-polyfill.min.js', dest: './dist/browser-polyfill.min.js' }
+          ];
+          
+          for (const { src, dest } of criticalFiles) {
+            try {
+              if (fs.existsSync(src)) {
+                fs.copyFileSync(src, dest);
+                console.log(`✅ Early copy: ${path.basename(src)} -> dist`);
+              } else {
+                console.error(`❌ CRITICAL ERROR: ${src} not found!`);
+              }
+            } catch (error) {
+              console.error(`❌ Error copying ${src}:`, error);
             }
-          } catch (error) {
-            console.error('❌ Error copying manifest.json:', error);
           }
         },
         // Also use closeBundle to ensure files are copied at the end of build
