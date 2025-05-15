@@ -1,3 +1,4 @@
+
 // src/components/priceCheck/CurrentListingCard.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -347,38 +348,37 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
             </div>
           )}
         </div>
-      </div>
-      
-      {!listingInfo.isAuction && isOnSale && (
-        <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
-          <p className="text-xs text-green-800 font-medium">
-            This item is on sale! Save {formatPrice(
-              (listingInfo.originalPrice || 0) - listingInfo.currentPrice
-            )} off the original price.
-          </p>
-        </div>
-      )}
-      
-      {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
-        <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
-          <p className="text-xs text-amber-800 font-medium flex items-center">
-            <Clock className="h-3 w-3 mr-1 text-amber-600" />
-            {listingInfo.bids > 5 
-              ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
-              : "Auction has few bids - potential opportunity"}
-          </p>
-        </div>
-      )}
+        
+        {!listingInfo.isAuction && isOnSale && (
+          <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
+            <p className="text-xs text-green-800 font-medium">
+              This item is on sale! Save {formatPrice(
+                (listingInfo.originalPrice || 0) - listingInfo.currentPrice
+              )} off the original price.
+            </p>
+          </div>
+        )}
+        
+        {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
+          <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
+            <p className="text-xs text-amber-800 font-medium flex items-center">
+              <Clock className="h-3 w-3 mr-1 text-amber-600" />
+              {listingInfo.bids > 5 
+                ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
+                : "Auction has few bids - potential opportunity"}
+            </p>
+          </div>
+        )}
 
-      {marketRate && (
-        <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
-          <p className="text-xs text-blue-800 font-medium">
-            Auction Market Rate: ${marketRate}
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
+        {marketRate && (
+          <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
+            <p className="text-xs text-blue-800 font-medium">
+              Auction Market Rate: ${marketRate}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
