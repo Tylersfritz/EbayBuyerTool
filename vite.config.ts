@@ -28,6 +28,41 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === 'development' && componentTagger(),
+      {
+        name: 'copy-manifest-files',
+        buildEnd() {
+          // Ensure dist directory exists
+          if (!fs.existsSync('./dist')) {
+            fs.mkdirSync('./dist');
+          }
+          
+          // Copy manifest files
+          console.log('Copying manifest files to dist directory...');
+          
+          try {
+            // Copy main manifest
+            if (fs.existsSync('./public/manifest.json')) {
+              fs.copyFileSync('./public/manifest.json', './dist/manifest.json');
+              console.log('✅ Copied manifest.json to dist folder');
+            } else {
+              console.warn('⚠️ Could not find manifest.json in public folder');
+            }
+            
+            // Copy browser-specific manifests
+            if (fs.existsSync('./public/manifest.edge.json')) {
+              fs.copyFileSync('./public/manifest.edge.json', './dist/manifest.edge.json');
+              console.log('✅ Copied manifest.edge.json to dist folder');
+            }
+            
+            if (fs.existsSync('./public/manifest.firefox.json')) {
+              fs.copyFileSync('./public/manifest.firefox.json', './dist/manifest.firefox.json');
+              console.log('✅ Copied manifest.firefox.json to dist folder');
+            }
+          } catch (error) {
+            console.error('Error copying manifest files:', error);
+          }
+        }
+      }
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -45,10 +80,10 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       rollupOptions: {
         input: {
-          index: path.resolve(__dirname, 'public/index.html'),
+          index: path.resolve(__dirname, 'index.html'),
           content: path.resolve(__dirname, 'public/content.js'),
           background: path.resolve(__dirname, 'public/background.js'),
-          mercari: path.resolve(__dirname, 'public/mercari-content.js')
+          mercari: path.resolve(__dirname, 'public/mercari-content.js'),
         },
         output: {
           entryFileNames: (chunkInfo) => {
