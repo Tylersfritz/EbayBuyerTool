@@ -2,7 +2,6 @@
 // src/components/priceCheck/usePriceCheck.ts
 import { useState, useEffect } from 'react';
 import { getCurrentListing } from '@/utils/listing/listingUtils';
-import { shouldUseAuctionMockData } from '@/utils/mock/mockModeUtils';
 import { getPriceCheck } from '@/api/priceApiService';
 import { ListingInfo, PriceCheckState, PriceCheckResponse } from './types/priceCheckTypes';
 import { extractItemSearchParams } from '../../api/priceApiClient';
@@ -13,8 +12,10 @@ import {
   getMockDataForMode
 } from './utils/mockData';
 import { useModeContext } from '@/context/ModeContext';
+import { toast } from '@/components/ui/sonner';
 
 const MAX_RETRIES = 2;
+const API_TIMEOUT_MS = 8000; // 8 seconds
 
 export function usePriceCheck(isPremium: boolean) {
   const [state, setState] = useState<PriceCheckState>({
@@ -72,6 +73,11 @@ export function usePriceCheck(isPremium: boolean) {
             loadingListingInfo: false,
             testMode: true
           }));
+          
+          // Only show this warning when we couldn't get real listing data
+          toast.warning("No eBay listing detected. Using test mode with sample data.", {
+            duration: 5000,
+          });
         }
       } catch (error) {
         console.error('Error fetching listing info:', error);
@@ -87,6 +93,9 @@ export function usePriceCheck(isPremium: boolean) {
           testMode: true,
           error: error instanceof Error ? error.message : 'Failed to get listing information'
         }));
+        
+        // Show a toast error with the actual error message
+        toast.error(`Failed to get listing information: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     fetchListingInfo();
@@ -98,12 +107,20 @@ export function usePriceCheck(isPremium: boolean) {
       console.log('handleCheckPrice aborted: already loading');
       return;
     }
+    
     setState(prev => ({ ...prev, loading: true, error: null }));
+    
     try {
       console.log('handleCheckPrice called, testMode:', state.testMode);
       console.log('Current state:', JSON.stringify(state, null, 2));
+      
       if (state.testMode) {
         console.log('Test mode: Using mock price data');
+        toast.info("Using test data for price analysis", { 
+          description: "This is sample data for demonstration purposes.",
+          duration: 5000 
+        });
+        
         await new Promise(resolve => setTimeout(resolve, 1500));
         const listingPrice = Math.max(state.listingInfo.currentPrice, 0.01);
         const mockDataAdjusted: PriceCheckResponse = {
@@ -111,11 +128,16 @@ export function usePriceCheck(isPremium: boolean) {
           averagePrice: isAuctionMode ? listingPrice * 1.15 : listingPrice * 0.95,
           sampleSize: 10,
           dateRange: '2025-05-01 - 2025-05-12',
-          source: 'Mock Data',
+          source: 'Mock Data (Test Mode)',
           itemCount: 10,
           timestamp: new Date().toISOString(),
           priceHistory: [{ date: '2025-05-10', price: listingPrice * 0.95 }],
-          priceRange: { min: listingPrice * 0.8, max: listingPrice * 1.2 }
+          priceRange: { min: listingPrice * 0.8, max: listingPrice * 1.2 },
+          dataQuality: {
+            confidence: 'low',
+            sources: ['Mock Data'],
+            warning: 'This is test data and does not reflect actual market values'
+          }
         };
         console.log('Mock price data:', JSON.stringify(mockDataAdjusted, null, 2));
         setState(prev => ({
@@ -125,37 +147,87 @@ export function usePriceCheck(isPremium: boolean) {
         }));
         return mockDataAdjusted;
       }
-      const { title, itemSpecifics, condition } = state.listingInfo;
-      const { searchTerm, model, brand } = extractItemSearchParams({ itemName: title, itemSpecifics, condition });
-      console.log('Checking price with parameters:', JSON.stringify({ searchTerm, model, brand, condition, isPremium }, null, 2));
-      const priceData = await getPriceCheck({
-        itemName: searchTerm,
-        model,
-        brand,
-        condition,
-        premium: isPremium
+      
+      // Set up a timeout for the API call
+      let timeoutId: number | undefined;
+      const timeoutPromise = new Promise<PriceCheckResponse>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('API request timed out after ' + API_TIMEOUT_MS/1000 + ' seconds'));
+        }, API_TIMEOUT_MS) as unknown as number;
       });
-      console.log('Price check response:', JSON.stringify(priceData, null, 2));
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        priceData,
-        error: priceData.error || (priceData.itemCount === 0 ? 'No items found for the given criteria' : null),
-        retryCount: priceData.error || priceData.itemCount === 0 ? prev.retryCount + 1 : 0
-      }));
-      if (priceData.error && state.retryCount < MAX_RETRIES) {
-        console.log(`Retry ${state.retryCount + 1}/${MAX_RETRIES}: Simplifying search terms`);
-        setTimeout(() => { handleCheckPrice(); }, 1000);
+
+      // For real API calls (not test mode)
+      const { title, itemSpecifics, condition, itemId } = state.listingInfo;
+      const { searchTerm, model, brand } = extractItemSearchParams({ itemName: title, itemSpecifics, condition });
+      console.log('Checking price with parameters:', JSON.stringify({ searchTerm, model, brand, condition, isPremium, itemId }, null, 2));
+      
+      try {
+        // Race the API call against the timeout
+        const apiPromise = getPriceCheck({
+          itemName: searchTerm,
+          model,
+          brand,
+          condition,
+          premium: isPremium,
+          itemId
+        });
+        
+        const priceData = await Promise.race([apiPromise, timeoutPromise]);
+        
+        // Clear the timeout since we got a response
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        console.log('Price check response:', JSON.stringify(priceData, null, 2));
+
+        // Show warning about data sources if needed
+        if (priceData.dataQuality?.confidence === 'low' || priceData.dataQuality?.warning) {
+          toast.warning(priceData.dataQuality?.warning || "Limited data available", {
+            description: "The price analysis may not be fully accurate.",
+            duration: 7000
+          });
+        }
+
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          priceData,
+          error: priceData.error || (priceData.itemCount === 0 ? 'No items found for the given criteria' : null),
+          retryCount: priceData.error || priceData.itemCount === 0 ? prev.retryCount + 1 : 0
+        }));
+
+        if ((priceData.error || priceData.itemCount === 0) && state.retryCount < MAX_RETRIES) {
+          console.log(`Retry ${state.retryCount + 1}/${MAX_RETRIES}: Simplifying search terms`);
+          toast.info("Retrying with simpler search terms...");
+          setTimeout(() => { handleCheckPrice(); }, 1000);
+        }
+        
+        return priceData;
+      } catch (error) {
+        // Clear the timeout if there was an error
+        if (timeoutId) clearTimeout(timeoutId);
+        throw error;
       }
-      return priceData;
     } catch (error) {
       console.error('Error in price check:', error);
+      
+      // Log detailed error info
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error(`Price check error details: ${errorMessage}`);
+      
+      // Show error toast
+      toast.error("Price check failed", {
+        description: errorMessage
+      });
+      
       setState(prev => ({
         ...prev,
         loading: false,
         error: error instanceof Error ? error.message : 'An unknown error occurred',
         retryCount: prev.retryCount + 1
       }));
+      
+      // NO automatic fallback to mock data - we want to be explicit about failures
+      // The user can always try again or manually switch to test mode
     }
   };
 

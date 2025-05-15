@@ -7,7 +7,7 @@ import { Loader, AlertCircle, CheckCircle, Search, RefreshCw, Gavel, Timer, Tag,
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { PriceCheckResponse } from "@/api/priceApiService";
+import { PriceCheckResponse } from "@/components/priceCheck/types/priceCheckTypes";
 
 interface PriceAnalysisCardProps {
   loading: boolean;
@@ -135,8 +135,8 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
     }
   };
 
-  const auctionMessage = getAuctionMessage();
-  const fixedPriceMessage = getFixedPriceMessage();
+  const auctionMessage = getAuctionMessage ? getAuctionMessage() : null;
+  const fixedPriceMessage = getFixedPriceMessage ? getFixedPriceMessage() : null;
 
   const getDealScoreColor = (score: number): string => {
     if (score >= 80) return "bg-green-500";
@@ -150,6 +150,15 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
     if (score >= 70) return <CheckCircle className="h-3 w-3" />;
     if (score >= 40) return <Info className="h-3 w-3" />;
     return <AlertCircle className="h-3 w-3" />;
+  };
+
+  const getConfidenceColor = (confidence?: 'high' | 'medium' | 'low') => {
+    switch (confidence) {
+      case 'high': return 'text-green-500';
+      case 'medium': return 'text-amber-500';
+      case 'low': return 'text-red-500';
+      default: return 'text-gray-500';
+    }
   };
 
   return (
@@ -181,11 +190,49 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
                   <TooltipTrigger asChild>
                     <Badge variant="secondary" className="text-xs bg-[#28A745] text-white font-bold rounded-[4px] shadow-sm">
                       {formatPrice(priceData.averagePrice)}
+                      {priceData.dataQuality && (
+                        <span className={`ml-1 ${getConfidenceColor(priceData.dataQuality.confidence)}`}>
+                          •
+                        </span>
+                      )}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="text-xs">Based on {priceData.itemCount} sold items</p>
                     <p className="text-xs">Price range: {priceData.priceRange ? `${formatPrice(priceData.priceRange.min)} - ${formatPrice(priceData.priceRange.max)}` : 'N/A'}</p>
+                    
+                    {priceData.dataQuality && (
+                      <>
+                        <div className="mt-2 mb-1 border-t border-gray-200 pt-1">
+                          <p className="text-xs font-semibold flex items-center">
+                            <span className={`mr-1 ${getConfidenceColor(priceData.dataQuality.confidence)}`}>●</span>
+                            Data Confidence: {priceData.dataQuality.confidence}
+                          </p>
+                        </div>
+                        
+                        <p className="text-xs font-semibold mt-1">Sources:</p>
+                        {priceData.dataQuality.sources.map((source, i) => (
+                          <p key={i} className="text-xs">{source}</p>
+                        ))}
+                        
+                        {priceData.dataQuality.warning && (
+                          <p className="text-xs text-yellow-600 mt-1">{priceData.dataQuality.warning}</p>
+                        )}
+                        
+                        {priceData.dataQuality.itemSpecifics && (
+                          <>
+                            <p className="text-xs font-semibold mt-1">Detected Item Details:</p>
+                            {priceData.dataQuality.itemSpecifics.make && (
+                              <p className="text-xs">Brand/Make: {priceData.dataQuality.itemSpecifics.make}</p>
+                            )}
+                            {priceData.dataQuality.itemSpecifics.model && (
+                              <p className="text-xs">Model: {priceData.dataQuality.itemSpecifics.model}</p>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                    
                     {priceData.warning && (
                       <p className="text-xs text-yellow-600">{priceData.warning}</p>
                     )}
@@ -218,7 +265,6 @@ const PriceAnalysisCard: React.FC<PriceAnalysisCardProps> = ({
             )
           )}
         </div>
-        {/* ... rest of the component unchanged ... */}
       </CardContent>
     </Card>
   );

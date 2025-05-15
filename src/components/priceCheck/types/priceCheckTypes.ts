@@ -1,4 +1,18 @@
+
 // src/components/priceCheck/types/priceCheckTypes.ts
+
+export interface DataQuality {
+  confidence: 'high' | 'medium' | 'low';
+  sources: string[];
+  warning?: string;
+  itemSpecifics?: {
+    make?: string | null;
+    model?: string | null;
+    category?: string | null;
+    [key: string]: any;
+  };
+}
+
 export interface PriceCheckResponse {
   averagePrice: number;
   itemCount: number;
@@ -11,6 +25,7 @@ export interface PriceCheckResponse {
   conditionAnalysis?: { condition: string; averagePrice: number; itemCount: number }[];
   error?: string;
   warning?: string;
+  dataQuality?: DataQuality;
 }
 
 export interface ListingInfo {
