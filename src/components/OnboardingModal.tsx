@@ -15,17 +15,22 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
     {
       title: "Check prices",
       description: "Get instant price comparisons from across the web to ensure you're getting the best deal.",
-      image: "placeholder.svg"
+      image: "/price-check.png"
     },
     {
       title: "Negotiate deals",
       description: "Use our AI-powered negotiation assistant to help you get the best possible price.",
-      image: "placeholder.svg"
+      image: "/negotiation-assistance.png"
     },
     {
-      title: "Snipe auctions (premium)",
-      description: "Upgrade to Premium to automatically bid at the last second and win more auctions.",
-      image: "placeholder.svg"
+      title: "Snipe auctions",
+      description: "Automatically bid at the last second and win more auctions with our premium feature.",
+      image: "/auction-sniping.png"
+    },
+    {
+      title: "Find arbitrage opportunities",
+      description: "Discover items you can buy low and sell high across different marketplaces for maximum profit.",
+      image: "/arbitrage-search.png"
     }
   ];
   
@@ -46,7 +51,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
         {steps.map((_, idx) => (
           <div 
             key={idx} 
-            className={`h-2 w-8 mx-1 rounded-full ${
+            className={`h-2 w-6 mx-1 rounded-full ${
               idx === currentStep ? 'bg-primary' : 'bg-muted'
             }`}
           />
@@ -55,11 +60,11 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
       
       <Card className="flex-1 flex flex-col justify-center overflow-hidden animate-fade-in">
         <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-24 h-24 bg-muted rounded-full mb-4 flex items-center justify-center">
+          <div className="w-48 h-48 mb-4 flex items-center justify-center">
             <img 
               src={steps[currentStep].image} 
               alt={steps[currentStep].title} 
-              className="max-w-full max-h-full"
+              className="max-w-full max-h-full object-contain"
             />
           </div>
           <h3 className="text-lg font-semibold mb-2">{currentStep + 1}. {steps[currentStep].title}</h3>

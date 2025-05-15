@@ -83,6 +83,13 @@ const App = ({ mode = 'marketing' }: AppProps) => {
 
   const completeOnboarding = () => {
     setIsFirstUse(false);
+    
+    // Save onboarding completion status
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.set({ dealHavenAIFirstUse: 'completed' });
+    } else {
+      localStorage.setItem('dealHavenAIFirstUse', 'completed');
+    }
   };
 
   return (
