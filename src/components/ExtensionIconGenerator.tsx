@@ -32,7 +32,7 @@ const ExtensionIconGenerator: React.FC = () => {
   
   const generateIcons = () => {
     const generatedIcons = generateDefaultIcons(primaryColor, secondaryColor, iconStyle);
-    setIcons(generatedIcons as IconSet);
+    setIcons(generatedIcons);
   };
   
   useEffect(() => {
@@ -42,7 +42,17 @@ const ExtensionIconGenerator: React.FC = () => {
   const handleDownloadIcons = () => {
     if (!icons) return;
     
-    downloadGeneratedIcons(icons);
+    // Convert IconSet to Record<string, string> to match the expected type
+    const iconRecord: Record<string, string> = {
+      icon16: icons.icon16,
+      icon48: icons.icon48,
+      icon128: icons.icon128,
+      icon16Active: icons.icon16Active,
+      icon48Active: icons.icon48Active,
+      icon128Active: icons.icon128Active
+    };
+    
+    downloadGeneratedIcons(iconRecord);
     
     toast({
       title: "Icons Downloaded",
