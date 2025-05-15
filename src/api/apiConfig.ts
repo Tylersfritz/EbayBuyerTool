@@ -3,7 +3,7 @@
 // API Configuration Utility for DealHavenAI
 // This utility handles environment detection and API URL configuration
 
-import { browserAPI } from '@/utils/browserUtils';
+import { getBrowserAPI } from '@/utils/browserUtils';
 
 // Default API URLs
 const DEFAULT_API_BASE_URL = 'https://ebay-buyer-tool-zp52.vercel.app/api';
@@ -24,10 +24,16 @@ export interface ApiConfig {
   environment: 'extension' | 'web' | 'development';
 }
 
+// Create a type for the apiSettings storage interface
+interface ApiSettingsStorage {
+  apiSettings?: Partial<ApiConfig>;
+}
+
 /**
  * Detect whether we're running in an extension environment
  */
 export function isExtensionEnvironment(): boolean {
+  const browserAPI = getBrowserAPI();
   return browserAPI.isExtensionEnvironment();
 }
 
@@ -36,6 +42,8 @@ export function isExtensionEnvironment(): boolean {
  * Checks storage first (for extension settings), then falls back to defaults
  */
 export async function getApiConfig(): Promise<ApiConfig> {
+  const browserAPI = getBrowserAPI();
+  
   // Default configuration
   const defaultConfig: ApiConfig = {
     baseUrl: DEFAULT_API_BASE_URL,
@@ -48,8 +56,9 @@ export async function getApiConfig(): Promise<ApiConfig> {
     defaultConfig.environment = 'extension';
 
     try {
-      const result = await browserAPI.storage.get<{apiSettings?: Partial<ApiConfig>}>('apiSettings');
-      const apiSettings = result.apiSettings;
+      // Fixed: Remove type arguments from the storage.get call
+      const result = await browserAPI.storage.get('apiSettings');
+      const apiSettings = (result as ApiSettingsStorage).apiSettings;
 
       if (apiSettings?.baseUrl) {
         return {
@@ -83,14 +92,17 @@ export async function getApiUrl(endpoint: keyof ApiConfig['endpoints']): Promise
  * Saves custom API configuration (for extension environment)
  */
 export async function saveApiConfig(config: Partial<ApiConfig>): Promise<boolean> {
+  const browserAPI = getBrowserAPI();
+  
   if (!isExtensionEnvironment()) {
     console.warn('Cannot save API config in non-extension environment');
     return false;
   }
 
   try {
-    const result = await browserAPI.storage.get<{apiSettings?: Record<string, any>}>('apiSettings');
-    const currentSettings = result.apiSettings || {};
+    // Fixed: Remove type arguments from the storage.get call
+    const result = await browserAPI.storage.get('apiSettings');
+    const currentSettings = (result as ApiSettingsStorage).apiSettings || {};
 
     const newSettings = {
       ...currentSettings,

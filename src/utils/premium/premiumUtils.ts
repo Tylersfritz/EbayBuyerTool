@@ -1,14 +1,24 @@
+
 /**
  * Utility functions for premium status
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getBrowserAPI } from '../browserUtils';
 
-// Get a reference to the browser API
-const browserAPI = getBrowserAPI();
+// Define types for storage data
+interface PremiumStorage {
+  dealHavenAIPremium?: string;
+}
 
-// Check premium status 
+interface VisualScanStorage {
+  [key: string]: number;
+}
+
+/**
+ * Check premium status
+ */
 export async function checkPremiumStatus(): Promise<boolean> {
+  const browserAPI = getBrowserAPI();
   const { data: session } = await supabase.auth.getSession();
   
   // For logged in users, check subscription status in Supabase
@@ -34,16 +44,20 @@ export async function checkPremiumStatus(): Promise<boolean> {
   
   // For development without auth, fall back to localStorage/browser.storage
   if (browserAPI.isExtensionEnvironment()) {
-    const result = await browserAPI.storage.get<Record<string, unknown>>('dealHavenAIPremium');
-    return result?.dealHavenAIPremium === 'active';
+    // Fixed: Remove type arguments from storage.get call
+    const result = await browserAPI.storage.get('dealHavenAIPremium');
+    return (result as PremiumStorage)?.dealHavenAIPremium === 'active';
   } else {
     // For development without browser API
     return localStorage.getItem('dealHavenAIPremium') === 'active';
   }
 }
 
-// Track Visual Scanner usage
+/**
+ * Track Visual Scanner usage
+ */
 export async function trackVisualScannerUsage(): Promise<boolean> {
+  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -97,16 +111,18 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
     
     if (browserAPI.isExtensionEnvironment()) {
       // Get current monthly usage count
-      const result = await browserAPI.storage.get<number>(storageKey) || 0;
+      // Fixed: Remove type arguments from storage.get call
+      const result = await browserAPI.storage.get(storageKey);
+      const currentValue = (result as unknown as number) || 0;
       
       // Check if monthly limit reached
-      if ((result as number) >= 1) {
+      if (currentValue >= 1) {
         console.error('Monthly upload limit reached');
         return false;
       }
       
       // Increment usage count
-      const value = (result as number) + 1;
+      const value = currentValue + 1;
       await browserAPI.storage.set({[storageKey]: value});
     } else {
       // For development without browser API, use localStorage with monthly limit
@@ -128,8 +144,11 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
   }
 }
 
-// Get monthly visual scanner usage count
+/**
+ * Get monthly visual scanner usage count
+ */
 export async function getVisualScannerUsageCount(): Promise<number> {
+  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -160,8 +179,9 @@ export async function getVisualScannerUsageCount(): Promise<number> {
     const storageKey = `dealHavenAI_visualScans_${today}`;
     
     if (browserAPI.isExtensionEnvironment()) {
-      const result = await browserAPI.storage.get<number>(storageKey);
-      return result || 0;
+      // Fixed: Remove type arguments from storage.get call
+      const result = await browserAPI.storage.get(storageKey);
+      return (result as unknown as number) || 0;
     } else {
       return parseInt(localStorage.getItem(storageKey) || '0', 10);
     }
