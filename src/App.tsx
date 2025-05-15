@@ -8,6 +8,8 @@ import { Link } from "react-router-dom";
 import ExtensionPopupWrapper from "./components/ExtensionPopupWrapper";
 import OnboardingModal from "./components/OnboardingModal";
 import { generateIcons } from "./utils/generateIcons";
+import { Button } from "@/components/ui/button";
+import { Package } from "lucide-react";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -97,6 +99,16 @@ const App = ({ mode = 'marketing' }: AppProps) => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        
+        {/* Add direct deploy link for easy access when having routing issues */}
+        <div className="fixed top-4 right-4 z-50">
+          <Link to="/deploy">
+            <Button variant="outline" size="sm" className="bg-white shadow-md flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span>Deployment Tools</span>
+            </Button>
+          </Link>
+        </div>
         
         {/* Main content based on mode */}
         {mode === 'extension' ? (

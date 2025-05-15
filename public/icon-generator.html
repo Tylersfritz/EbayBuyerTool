@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Icon Generator</title>
+  <script>
+    function generateIcons() {
+      // Base icon color - blue color (#1EAEDB)
+      const iconColor = '#1EAEDB';
+      
+      // Create canvas for each icon size
+      const sizes = [16, 48, 128];
+      const icons = {};
+      
+      sizes.forEach(size => {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw background
+        ctx.fillStyle = iconColor;
+        ctx.fillRect(0, 0, size, size);
+        
+        // Draw shield shape (simplified for small icons)
+        ctx.fillStyle = 'white';
+        const shieldWidth = size * 0.7;
+        const shieldHeight = size * 0.8;
+        const shieldX = (size - shieldWidth) / 2;
+        const shieldY = (size - shieldHeight) / 2;
+        
+        // Draw a simple shield
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX + shieldWidth, shieldY);
+        ctx.lineTo(shieldX + shieldWidth, shieldY + shieldHeight * 0.7);
+        ctx.lineTo(shieldX + shieldWidth / 2, shieldY + shieldHeight);
+        ctx.lineTo(shieldX, shieldY + shieldHeight * 0.7);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Add checkmark for larger icons
+        if (size >= 48) {
+          ctx.strokeStyle = iconColor;
+          ctx.lineWidth = size * 0.08;
+          ctx.beginPath();
+          ctx.moveTo(shieldX + shieldWidth * 0.3, shieldY + shieldHeight * 0.5);
+          ctx.lineTo(shieldX + shieldWidth * 0.45, shieldY + shieldHeight * 0.65);
+          ctx.lineTo(shieldX + shieldWidth * 0.7, shieldY + shieldHeight * 0.35);
+          ctx.stroke();
+        }
+        
+        // Convert to data URL and display
+        const dataUrl = canvas.toDataURL('image/png');
+        icons[`icon${size}`] = dataUrl;
+        
+        // Add to page
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.title = `${size}x${size} Icon`;
+        img.style.marginRight = '10px';
+        document.getElementById('preview').appendChild(img);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `icon-${size}.png`;
+        link.className = 'download-btn';
+        link.textContent = `Download ${size}x${size} Icon`;
+        document.getElementById('downloads').appendChild(link);
+      });
+      
+      return icons;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      generateIcons();
+      
+      document.getElementById('downloadAll').addEventListener('click', function() {
+        // Trigger all download buttons
+        document.querySelectorAll('.download-btn').forEach(btn => {
+          btn.click();
+        });
+      });
+      
+      document.getElementById('copyManifest').addEventListener('click', function() {
+        const manifestJson = {
+          "manifest_version": 3,
+          "name": "DealHavenAI",
+          "version": "1.0.0",
+          "description": "Smart tools for buyers with price checks, negotiation assistance, auction sniping and more",
+          "action": {
+            "default_popup": "index.html",
+            "default_icon": {
+              "16": "icon-16.png",
+              "48": "icon-48.png",
+              "128": "icon-128.png"
+            }
+          },
+          "icons": {
+            "16": "icon-16.png",
+            "48": "icon-48.png",
+            "128": "icon-128.png"
+          },
+          "background": {
+            "service_worker": "background.js"
+          },
+          "permissions": [
+            "activeTab",
+            "storage"
+          ],
+          "host_permissions": [
+            "https://*.ebay.com/*",
+            "https://*.mercari.com/*",
+            "https://*.vercel.app/*"
+          ],
+          "content_scripts": [
+            {
+              "matches": ["https://*.ebay.com/itm/*"],
+              "js": ["browser-polyfill.min.js", "content.js"]
+            },
+            {
+              "matches": ["https://*.mercari.com/item/*"],
+              "js": ["browser-polyfill.min.js", "mercari-content.js"]
+            }
+          ],
+          "web_accessible_resources": [
+            {
+              "resources": [
+                "placeholder.svg",
+                "icon-16.png",
+                "icon-48.png",
+                "icon-128.png",
+                "icon-16-active.png",
+                "icon-48-active.png",
+                "icon-128-active.png",
+                "favicon.ico",
+                "browser-polyfill.min.js"
+              ],
+              "matches": ["<all_urls>"]
+            }
+          ]
+        };
+        
+        const manifestString = JSON.stringify(manifestJson, null, 2);
+        navigator.clipboard.writeText(manifestString);
+        
+        document.getElementById('copyStatus').textContent = 'Manifest copied to clipboard!';
+        setTimeout(() => {
+          document.getElementById('copyStatus').textContent = '';
+        }, 2000);
+      });
+    });
+  </script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #preview {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+    #preview img {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+      background: white;
+    }
+    #downloads {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .download-btn, button {
+      background-color: #1EAEDB;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+      text-align: center;
+    }
+    .download-btn:hover, button:hover {
+      background-color: #1a98c0;
+    }
+    pre {
+      background-color: #f1f1f1;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    #copyStatus {
+      color: #1EAEDB;
+      margin-left: 10px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>DealHaven Extension Icon Generator</h1>
+  <p>Use this standalone tool to generate and download icons for your Chrome extension.</p>
+  
+  <div class="container">
+    <h2>Icon Preview</h2>
+    <div id="preview"></div>
+    
+    <h2>Download Icons</h2>
+    <div id="downloads"></div>
+    <button id="downloadAll" style="margin-top: 15px;">Download All Icons</button>
+  </div>
+  
+  <div class="container">
+    <h2>Manifest.json</h2>
+    <p>Copy this manifest.json template to use with your extension:</p>
+    <button id="copyManifest">Copy Manifest to Clipboard</button>
+    <span id="copyStatus"></span>
+  </div>
+  
+  <div class="container">
+    <h2>Instructions</h2>
+    <ol>
+      <li>Download all icons using the buttons above</li>
+      <li>Place the downloaded icon files in your extension's public directory</li>
+      <li>Copy the manifest.json and save it to your public directory</li>
+      <li>Rebuild your extension with <code>npm run build</code></li>
+      <li>Load the unpacked extension from your dist directory</li>
+    </ol>
+  </div>
+</body>
+</html>
