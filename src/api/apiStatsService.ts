@@ -1,4 +1,3 @@
-
 import { apiRequest } from './apiClient';
 import { ApiStats } from '@/components/apiStats/types';
 import { 
@@ -7,7 +6,7 @@ import {
   mockApiStatsWithActiveRequests,
   mockApiStatsWithRateLimiting
 } from '@/components/apiStats/utils/mockData';
-import { isExtensionEnvironment } from './apiConfig';
+import { isExtensionEnvironment } from '@/utils/browserUtils';
 
 export interface ApiStatsParams {
   clearCache?: boolean;

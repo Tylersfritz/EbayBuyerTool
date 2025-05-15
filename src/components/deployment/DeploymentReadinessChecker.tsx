@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, AlertCircle, AlertTriangle, ArrowRight, RefreshCcw } from "lucide-react";
 import { useApiHealth } from '@/context/ApiHealthContext';
 import { getApiConfig } from '@/api/apiConfig';
-import { isExtensionEnvironment } from '@/api/apiConfig';
+import { isExtensionEnvironment } from '@/utils/browserUtils';
 import { toast } from "@/components/ui/sonner";
 
 interface CheckResult {

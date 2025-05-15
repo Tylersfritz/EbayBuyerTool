@@ -1,6 +1,9 @@
 
+// src/api/apiClient.ts
+
 import { toast } from '@/components/ui/sonner';
-import { getApiUrl, isExtensionEnvironment } from './apiConfig';
+import { getApiUrl } from './apiConfig';
+import { isExtensionEnvironment } from '@/utils/browserUtils';
 import { ApiStats } from '@/components/apiStats/types';
 
 // API error types for better error handling

@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { ApiStats } from '../types';
 import { getApiStats, getMockApiStats, getRotatingMockStats } from '@/api/apiStatsService';
 import { useApiHealth } from '@/context/ApiHealthContext';
 import { ApiErrorType } from '@/api/apiClient';
-import { isExtensionEnvironment } from '@/api/apiConfig';
-import { toast } from "@/components/ui/sonner";
+import { isExtensionEnvironment } from '@/utils/browserUtils';
+import { toast } from "@/components/ui/use-toast";
 
 export interface ApiStatsState {
   stats: ApiStats | null;

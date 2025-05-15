@@ -1,5 +1,5 @@
 
-import { isExtensionEnvironment } from '@/api/apiConfig';
+import { isExtensionEnvironment } from '@/utils/browserUtils';
 import { ListingInfo } from '../types/priceCheckTypes';
 
 // Get price difference percentage
