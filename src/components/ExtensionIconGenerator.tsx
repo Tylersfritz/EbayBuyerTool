@@ -1,234 +1,228 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Shield, Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { saveAs } from 'file-saver';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { generateDefaultIcons, downloadGeneratedIcons } from '@/utils/generateDefaultIcons';
+import { toast } from '@/hooks/use-toast';
+import { DownloadCloud, RefreshCw, PaintBrush } from 'lucide-react';
 
-/**
- * Component that generates icons for the Chrome Extension
- * Creates both standard and active state icons in required sizes
- */
 const ExtensionIconGenerator: React.FC = () => {
-  const canvasRefs = {
-    icon16: useRef<HTMLCanvasElement>(null),
-    icon48: useRef<HTMLCanvasElement>(null),
-    icon128: useRef<HTMLCanvasElement>(null),
-    icon16Active: useRef<HTMLCanvasElement>(null),
-    icon48Active: useRef<HTMLCanvasElement>(null),
-    icon128Active: useRef<HTMLCanvasElement>(null),
-  };
+  const [icons, setIcons] = useState<{
+    icon16: string;
+    icon48: string;
+    icon128: string;
+    icon16Active: string;
+    icon48Active: string;
+    icon128Active: string;
+  } | null>(null);
   
-  const [icons, setIcons] = useState<Record<string, string>>({});
+  const [primaryColor, setPrimaryColor] = useState('#1EAEDB');
+  const [secondaryColor, setSecondaryColor] = useState('#ffffff');
+  const [iconStyle, setIconStyle] = useState('gradient');
   
   useEffect(() => {
-    generateAllIcons();
+    // Generate icons when component mounts
+    generateIcons();
   }, []);
   
-  const generateAllIcons = () => {
-    const iconUrls: Record<string, string> = {};
-    
-    // Generate standard icons
-    iconUrls.icon16 = generateIcon(16, false, canvasRefs.icon16.current);
-    iconUrls.icon48 = generateIcon(48, false, canvasRefs.icon48.current);
-    iconUrls.icon128 = generateIcon(128, false, canvasRefs.icon128.current);
-    
-    // Generate active state icons
-    iconUrls.icon16Active = generateIcon(16, true, canvasRefs.icon16Active.current);
-    iconUrls.icon48Active = generateIcon(48, true, canvasRefs.icon48Active.current);
-    iconUrls.icon128Active = generateIcon(128, true, canvasRefs.icon128Active.current);
-    
-    setIcons(iconUrls);
+  const generateIcons = () => {
+    const generatedIcons = generateDefaultIcons(primaryColor, secondaryColor, iconStyle);
+    setIcons(generatedIcons);
   };
   
-  const generateIcon = (size: number, isActive: boolean, canvas: HTMLCanvasElement | null): string => {
-    if (!canvas) return '';
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    
-    // Clear previous content
-    ctx.clearRect(0, 0, size, size);
-    
-    // Set colors based on active state
-    const baseColor = isActive ? '#34D399' : '#1EAEDB';
-    
-    // Draw shield background
-    const centerX = size / 2;
-    const shieldWidth = size * 0.8;
-    const shieldTop = size * 0.1;
-    const shieldBottom = size * 0.9;
-    
-    // Shield shape
-    ctx.fillStyle = baseColor;
-    ctx.beginPath();
-    ctx.moveTo(centerX, shieldTop);
-    ctx.lineTo(centerX + shieldWidth/2, shieldTop + size * 0.15);
-    ctx.lineTo(centerX + shieldWidth/2, size * 0.6);
-    ctx.arcTo(centerX + shieldWidth/2, shieldBottom, centerX, shieldBottom, shieldWidth/2);
-    ctx.arcTo(centerX - shieldWidth/2, shieldBottom, centerX - shieldWidth/2, size * 0.6, shieldWidth/2);
-    ctx.lineTo(centerX - shieldWidth/2, shieldTop + size * 0.15);
-    ctx.closePath();
-    ctx.fill();
-    
-    // Add highlight shine
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.beginPath();
-    ctx.moveTo(centerX, shieldTop + size * 0.05);
-    ctx.lineTo(centerX + shieldWidth * 0.4, shieldTop + size * 0.15);
-    ctx.lineTo(centerX + shieldWidth * 0.3, shieldTop + size * 0.25);
-    ctx.lineTo(centerX, shieldTop + size * 0.2);
-    ctx.lineTo(centerX - shieldWidth * 0.3, shieldTop + size * 0.25);
-    ctx.lineTo(centerX - shieldWidth * 0.4, shieldTop + size * 0.15);
-    ctx.closePath();
-    ctx.fill();
-    
-    // Draw text or checkmark
-    if (size > 32) {
-      // For larger icons
-      ctx.fillStyle = 'white';
-      ctx.font = `bold ${size * 0.25}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('DH', centerX, centerX + size * 0.1);
-      
-      if (isActive) {
-        // Add checkmark for active icons
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = size * 0.05;
-        ctx.beginPath();
-        ctx.moveTo(centerX - size * 0.15, centerX - size * 0.05);
-        ctx.lineTo(centerX, centerX + size * 0.1);
-        ctx.lineTo(centerX + size * 0.2, centerX - size * 0.1);
-        ctx.stroke();
-      }
-    } else {
-      // For smaller icons, just use simple text or symbol
-      ctx.fillStyle = 'white';
-      ctx.font = `bold ${size * 0.4}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(isActive ? '✓' : 'D', centerX, centerX);
-    }
-    
-    return canvas.toDataURL();
-  };
+  useEffect(() => {
+    generateIcons();
+  }, [primaryColor, secondaryColor, iconStyle]);
   
-  const downloadIcon = (iconKey: string, filename: string) => {
-    const iconUrl = icons[iconKey];
-    if (iconUrl) {
-      saveAs(iconUrl, filename);
-    }
-  };
-  
-  const downloadAllIcons = () => {
-    downloadIcon('icon16', 'icon-16.png');
-    downloadIcon('icon48', 'icon-48.png');
-    downloadIcon('icon128', 'icon-128.png');
-    downloadIcon('icon16Active', 'icon-16-active.png');
-    downloadIcon('icon48Active', 'icon-48-active.png');
-    downloadIcon('icon128Active', 'icon-128-active.png');
+  const handleDownloadIcons = () => {
+    if (!icons) return;
+    
+    downloadGeneratedIcons(icons);
+    
+    toast({
+      title: "Icons Downloaded",
+      description: "Save these files to your project's public folder",
+      duration: 5000
+    });
   };
   
   return (
-    <Card className="w-full max-w-4xl">
+    <Card>
       <CardHeader>
         <CardTitle>Extension Icon Generator</CardTitle>
-        <CardDescription>Generate and download the required icons for the Chrome Extension</CardDescription>
+        <CardDescription>
+          Create consistent icons for your extension in all required sizes
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="standard">
-          <TabsList className="mb-4">
-            <TabsTrigger value="standard">Standard Icons</TabsTrigger>
-            <TabsTrigger value="active">Active State Icons</TabsTrigger>
+      <CardContent className="space-y-5">
+        <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
+          <AlertTitle>Important</AlertTitle>
+          <AlertDescription>
+            All Chrome extensions require several icon sizes. After generating, download and place them in your project's public folder.
+          </AlertDescription>
+        </Alert>
+        
+        <Tabs defaultValue="design">
+          <TabsList>
+            <TabsTrigger value="design">Design</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="standard" className="space-y-6">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">16x16</h3>
-                <canvas ref={canvasRefs.icon16} width="16" height="16" className="border border-gray-200 w-16 h-16"></canvas>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon16', 'icon-16.png')}
-                >
-                  Download
-                </Button>
+          <TabsContent value="design" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Primary Color</label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="color" 
+                    value={primaryColor} 
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="w-full h-10 cursor-pointer rounded-md"
+                  />
+                  <input 
+                    type="text" 
+                    value={primaryColor} 
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="w-24 px-2 py-1 border rounded-md"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">48x48</h3>
-                <canvas ref={canvasRefs.icon48} width="48" height="48" className="border border-gray-200 w-16 h-16"></canvas>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon48', 'icon-48.png')}
-                >
-                  Download
-                </Button>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Secondary Color</label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="color" 
+                    value={secondaryColor} 
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="w-full h-10 cursor-pointer rounded-md"
+                  />
+                  <input 
+                    type="text" 
+                    value={secondaryColor} 
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="w-24 px-2 py-1 border rounded-md"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">128x128</h3>
-                <canvas ref={canvasRefs.icon128} width="128" height="128" className="border border-gray-200 w-16 h-16"></canvas>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Icon Style</label>
+              <div className="grid grid-cols-3 gap-2">
                 <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon128', 'icon-128.png')}
+                  variant={iconStyle === 'gradient' ? 'default' : 'outline'} 
+                  onClick={() => setIconStyle('gradient')}
+                  className="h-auto py-2"
                 >
-                  Download
+                  Gradient
+                </Button>
+                <Button 
+                  variant={iconStyle === 'flat' ? 'default' : 'outline'}
+                  onClick={() => setIconStyle('flat')}
+                  className="h-auto py-2"
+                >
+                  Flat
+                </Button>
+                <Button 
+                  variant={iconStyle === 'outline' ? 'default' : 'outline'}
+                  onClick={() => setIconStyle('outline')}
+                  className="h-auto py-2"
+                >
+                  Outline
                 </Button>
               </div>
             </div>
           </TabsContent>
           
-          <TabsContent value="active" className="space-y-6">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">16x16 Active</h3>
-                <canvas ref={canvasRefs.icon16Active} width="16" height="16" className="border border-gray-200 w-16 h-16"></canvas>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon16Active', 'icon-16-active.png')}
-                >
-                  Download
-                </Button>
-              </div>
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">48x48 Active</h3>
-                <canvas ref={canvasRefs.icon48Active} width="48" height="48" className="border border-gray-200 w-16 h-16"></canvas>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon48Active', 'icon-48-active.png')}
-                >
-                  Download
-                </Button>
-              </div>
-              <div className="flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">128x128 Active</h3>
-                <canvas ref={canvasRefs.icon128Active} width="128" height="128" className="border border-gray-200 w-16 h-16"></canvas>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => downloadIcon('icon128Active', 'icon-128-active.png')}
-                >
-                  Download
-                </Button>
-              </div>
+          <TabsContent value="preview" className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              {icons && (
+                <>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">16x16</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon16} 
+                        alt="16x16 icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">48x48</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon48} 
+                        alt="48x48 icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">128x128</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon128} 
+                        alt="128x128 icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">16x16 Active</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon16Active} 
+                        alt="16x16 active icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">48x48 Active</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon48Active} 
+                        alt="48x48 active icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <h3 className="text-sm font-medium">128x128 Active</h3>
+                    <div className="p-4 border rounded bg-slate-50">
+                      <img 
+                        src={icons.icon128Active} 
+                        alt="128x128 active icon" 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-      <CardFooter>
-        <Button onClick={downloadAllIcons}>Download All Icons</Button>
+      <CardFooter className="flex justify-between border-t pt-4">
+        <Button 
+          variant="outline" 
+          onClick={generateIcons}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Regenerate
+        </Button>
+        <Button 
+          onClick={handleDownloadIcons}
+          className="flex items-center gap-2"
+        >
+          <DownloadCloud className="h-4 w-4" />
+          Download All Icons
+        </Button>
       </CardFooter>
     </Card>
   );

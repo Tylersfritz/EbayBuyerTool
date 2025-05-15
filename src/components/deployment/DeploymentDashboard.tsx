@@ -3,12 +3,13 @@ import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Image, CheckCircle, LayoutGrid, Chrome } from "lucide-react";
+import { Package, Image, CheckCircle, LayoutGrid, Chrome, FileJson } from "lucide-react";
 
 import ExtensionIconGenerator from '@/components/ExtensionIconGenerator';
 import DeploymentReadinessChecker from './DeploymentReadinessChecker';
 import ApiStatsServiceFixer from './ApiStatsServiceFixer';
 import BrowserCompatibilityChecker from './BrowserCompatibilityChecker';
+import ManifestFixer from './ManifestFixer';
 
 const DeploymentDashboard: React.FC = () => {
   return (
@@ -23,8 +24,12 @@ const DeploymentDashboard: React.FC = () => {
         </Badge>
       </div>
       
-      <Tabs defaultValue="readiness" className="space-y-4">
+      <Tabs defaultValue="manifest" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="manifest" className="flex items-center gap-2">
+            <FileJson className="h-4 w-4" />
+            <span>Fix Manifest</span>
+          </TabsTrigger>
           <TabsTrigger value="readiness" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>Readiness Check</span>
@@ -46,6 +51,10 @@ const DeploymentDashboard: React.FC = () => {
             <span>Package Builder</span>
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="manifest" className="space-y-4">
+          <ManifestFixer />
+        </TabsContent>
         
         <TabsContent value="readiness" className="space-y-4">
           <DeploymentReadinessChecker />

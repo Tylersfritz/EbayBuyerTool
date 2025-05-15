@@ -1,101 +1,132 @@
 
-/**
- * Utility for generating default extension icons when they're missing
- * This is a fallback mechanism to ensure the extension can load even if icon files are missing
- */
+interface IconSet {
+  icon16: string;
+  icon48: string;
+  icon128: string;
+  icon16Active?: string;
+  icon48Active?: string;
+  icon128Active?: string;
+}
 
-export function generateDefaultIcons() {
-  // Generate the 16x16 icon
-  const canvas16 = document.createElement('canvas');
-  canvas16.width = 16;
-  canvas16.height = 16;
-  const ctx16 = canvas16.getContext('2d');
-  if (ctx16) {
-    // Draw shield background
-    ctx16.fillStyle = '#1EAEDB';
-    ctx16.beginPath();
-    ctx16.moveTo(8, 1);
-    ctx16.lineTo(14, 3);
-    ctx16.lineTo(14, 8);
-    ctx16.arcTo(14, 12, 8, 15, 6);
-    ctx16.arcTo(2, 12, 2, 8, 6);
-    ctx16.lineTo(2, 3);
-    ctx16.closePath();
-    ctx16.fill();
+/**
+ * Generate a set of default icons for the extension
+ * Returns data URLs that can be used as src for image elements
+ */
+export function generateDefaultIcons(
+  primaryColor: string = '#1EAEDB',
+  secondaryColor: string = '#ffffff',
+  style: 'gradient' | 'flat' | 'outline' = 'gradient'
+): IconSet {
+  // Function to create an icon canvas with the specified size
+  const createIconCanvas = (size: number, active: boolean = false) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, size, size);
+
+    // Adjust colors for active state
+    const mainColor = active ? '#ff6b00' : primaryColor;
     
-    // Draw text
-    ctx16.fillStyle = 'white';
-    ctx16.font = 'bold 8px Arial';
-    ctx16.textAlign = 'center';
-    ctx16.textBaseline = 'middle';
-    ctx16.fillText('DH', 8, 8);
-  }
+    // Calculate dimensions
+    const padding = Math.max(2, Math.floor(size * 0.1));
+    const innerSize = size - (padding * 2);
+    
+    if (style === 'gradient') {
+      // Create gradient background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, mainColor);
+      gradient.addColorStop(1, active ? '#ff9d4d' : '#0a617a');
+      
+      // Draw rounded rectangle with gradient
+      ctx.fillStyle = gradient;
+      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
+      ctx.fill();
+      
+      // Draw letter D in the center
+      ctx.fillStyle = secondaryColor;
+      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('D', size / 2, size / 2);
+    } 
+    else if (style === 'flat') {
+      // Flat style
+      ctx.fillStyle = mainColor;
+      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
+      ctx.fill();
+      
+      // Draw letter D in the center
+      ctx.fillStyle = secondaryColor;
+      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('D', size / 2, size / 2);
+    }
+    else if (style === 'outline') {
+      // Outline style
+      ctx.strokeStyle = mainColor;
+      ctx.lineWidth = Math.max(2, Math.floor(size * 0.05));
+      roundRect(ctx, padding, padding, innerSize, innerSize, Math.max(4, size * 0.1));
+      ctx.stroke();
+      
+      // Draw letter D in the center
+      ctx.fillStyle = mainColor;
+      ctx.font = `bold ${Math.floor(size * 0.5)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('D', size / 2, size / 2);
+    }
+    
+    return canvas;
+  };
   
-  // Generate the 48x48 icon
-  const canvas48 = document.createElement('canvas');
-  canvas48.width = 48;
-  canvas48.height = 48;
-  const ctx48 = canvas48.getContext('2d');
-  if (ctx48) {
-    // Draw shield background
-    ctx48.fillStyle = '#1EAEDB';
-    ctx48.beginPath();
-    ctx48.moveTo(24, 3);
-    ctx48.lineTo(42, 9);
-    ctx48.lineTo(42, 24);
-    ctx48.arcTo(42, 36, 24, 45, 18);
-    ctx48.arcTo(6, 36, 6, 24, 18);
-    ctx48.lineTo(6, 9);
-    ctx48.closePath();
-    ctx48.fill();
-    
-    // Draw text
-    ctx48.fillStyle = 'white';
-    ctx48.font = 'bold 20px Arial';
-    ctx48.textAlign = 'center';
-    ctx48.textBaseline = 'middle';
-    ctx48.fillText('DH', 24, 24);
-  }
+  // Helper for drawing rounded rectangles
+  const roundRect = (
+    ctx: CanvasRenderingContext2D, 
+    x: number, 
+    y: number, 
+    width: number, 
+    height: number, 
+    radius: number
+  ) => {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
+    ctx.closePath();
+  };
   
-  // Generate the 128x128 icon
-  const canvas128 = document.createElement('canvas');
-  canvas128.width = 128;
-  canvas128.height = 128;
-  const ctx128 = canvas128.getContext('2d');
-  if (ctx128) {
-    // Draw shield background
-    ctx128.fillStyle = '#1EAEDB';
-    ctx128.beginPath();
-    ctx128.moveTo(64, 8);
-    ctx128.lineTo(112, 24);
-    ctx128.lineTo(112, 64);
-    ctx128.arcTo(112, 96, 64, 120, 48);
-    ctx128.arcTo(16, 96, 16, 64, 48);
-    ctx128.lineTo(16, 24);
-    ctx128.closePath();
-    ctx128.fill();
-    
-    // Draw text
-    ctx128.fillStyle = 'white';
-    ctx128.font = 'bold 56px Arial';
-    ctx128.textAlign = 'center';
-    ctx128.textBaseline = 'middle';
-    ctx128.fillText('DH', 64, 64);
-  }
+  // Create icons of different sizes
+  const icon16Canvas = createIconCanvas(16);
+  const icon48Canvas = createIconCanvas(48);
+  const icon128Canvas = createIconCanvas(128);
+  
+  // Create active state icons
+  const icon16ActiveCanvas = createIconCanvas(16, true);
+  const icon48ActiveCanvas = createIconCanvas(48, true);
+  const icon128ActiveCanvas = createIconCanvas(128, true);
   
   return {
-    icon16: canvas16.toDataURL(),
-    icon48: canvas48.toDataURL(),
-    icon128: canvas128.toDataURL()
+    icon16: icon16Canvas.toDataURL('image/png'),
+    icon48: icon48Canvas.toDataURL('image/png'),
+    icon128: icon128Canvas.toDataURL('image/png'),
+    icon16Active: icon16ActiveCanvas.toDataURL('image/png'),
+    icon48Active: icon48ActiveCanvas.toDataURL('image/png'),
+    icon128Active: icon128ActiveCanvas.toDataURL('image/png'),
   };
 }
 
-// Function to download icons to user's computer
-export function downloadGeneratedIcons() {
-  const icons = generateDefaultIcons();
-  
-  // Helper function to trigger download
-  const downloadIcon = (dataUrl: string, filename: string) => {
+/**
+ * Download the generated icons as PNG files
+ */
+export function downloadGeneratedIcons(icons: IconSet): void {
+  const downloadImage = (dataUrl: string, filename: string) => {
     const link = document.createElement('a');
     link.href = dataUrl;
     link.download = filename;
@@ -104,40 +135,13 @@ export function downloadGeneratedIcons() {
     document.body.removeChild(link);
   };
   
-  // Download all icons
-  downloadIcon(icons.icon16, 'icon-16.png');
-  downloadIcon(icons.icon48, 'icon-48.png');
-  downloadIcon(icons.icon128, 'icon-128.png');
+  // Download the icons
+  downloadImage(icons.icon16, 'icon-16.png');
+  downloadImage(icons.icon48, 'icon-48.png');
+  downloadImage(icons.icon128, 'icon-128.png');
   
-  return icons;
-}
-
-// Function to save icons directly to the extension (works only in dev mode)
-export function saveIconsToExtension() {
-  const icons = generateDefaultIcons();
-  
-  // Fix: Check for chrome.runtime existence in a safer way
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    console.log('Attempting to save icons to extension storage...');
-    // We can't directly write to filesystem from extension, but we can store in extension storage
-    try {
-      // Check if storage API is available first
-      if (chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({
-          generatedIcons: icons
-        }, () => {
-          console.log('Icons saved to extension storage.');
-        });
-        return true;
-      } else {
-        console.warn('Chrome storage API not available');
-        return false;
-      }
-    } catch (e) {
-      console.error('Failed to save icons to extension:', e);
-      return false;
-    }
-  }
-  
-  return false;
+  // Download active icons if available
+  if (icons.icon16Active) downloadImage(icons.icon16Active, 'icon-16-active.png');
+  if (icons.icon48Active) downloadImage(icons.icon48Active, 'icon-48-active.png');
+  if (icons.icon128Active) downloadImage(icons.icon128Active, 'icon-128-active.png');
 }
