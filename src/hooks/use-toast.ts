@@ -5,12 +5,16 @@ import * as React from "react";
 const TOAST_LIMIT = 5;
 export const TOAST_REMOVE_DELAY = 1000000;
 
-// Fix 1: Redefine ToasterToast without self-reference
-export interface ToasterToast extends ToastProps {
+// Fix: Create ToasterToast without directly extending ToastProps to avoid type mismatch
+export interface ToasterToast {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  open?: boolean;
+  variant?: "default" | "destructive";
+  onOpenChange?: (open: boolean) => void;
+  className?: string;
 }
 
 const actionTypes = {
@@ -133,7 +137,7 @@ function dispatch(action: Action) {
   });
 }
 
-// Fix 2: Define a new type without circular reference
+// Define a type without circular reference
 export type ToastParameters = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: ToastParameters) {
