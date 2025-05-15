@@ -48,7 +48,7 @@ try {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   
   // Check for required manifest fields
-  const requiredFields = ['name', 'version', 'manifest_version', 'icons'];
+  const requiredFields = ['name', 'version', 'manifest_version', 'icons', 'action', 'background', 'content_scripts'];
   const missingFields = requiredFields.filter(field => !manifest[field]);
   
   if (missingFields.length > 0) {
@@ -56,9 +56,37 @@ try {
     process.exit(1);
   }
   
+  // Check content scripts configuration
+  if (!manifest.content_scripts || !Array.isArray(manifest.content_scripts) || manifest.content_scripts.length === 0) {
+    console.error('❌ manifest.json has invalid content_scripts configuration');
+    process.exit(1);
+  }
+  
+  // Check web_accessible_resources
+  if (!manifest.web_accessible_resources || !Array.isArray(manifest.web_accessible_resources) || manifest.web_accessible_resources.length === 0) {
+    console.error('❌ manifest.json has invalid web_accessible_resources configuration');
+    process.exit(1);
+  }
+  
   console.log('✅ manifest.json validation passed');
 } catch (error) {
   console.error('❌ Failed to validate manifest.json:', error.message);
+  process.exit(1);
+}
+
+// Check if browser-polyfill.min.js is properly referenced in HTML file
+try {
+  const htmlPath = path.join('./dist', 'index.html');
+  const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+  
+  if (!htmlContent.includes('browser-polyfill.min.js')) {
+    console.error('❌ browser-polyfill.min.js is not properly referenced in index.html');
+    process.exit(1);
+  }
+  
+  console.log('✅ Browser polyfill reference check passed');
+} catch (error) {
+  console.error('❌ Failed to check HTML for browser polyfill reference:', error.message);
   process.exit(1);
 }
 

@@ -5,31 +5,46 @@
 
 // Check if the current environment is a browser extension
 export function isExtensionEnvironment(): boolean {
-  return !!window.chrome?.runtime || !!window.browser?.runtime;
+  try {
+    return !!(
+      (typeof window !== 'undefined' && window.chrome && window.chrome.runtime) ||
+      (typeof window !== 'undefined' && window.browser && window.browser.runtime)
+    );
+  } catch (e) {
+    console.error("Error checking extension environment:", e);
+    return false;
+  }
 }
 
 // Safe access to browser API with fallback to chrome API or mock
 export function getBrowserAPI() {
   // For actual extension environment
   if (typeof window !== 'undefined') {
-    // Use the browser object if available (Firefox, etc.)
-    if (window.browser) {
-      return window.browser;
-    }
-    
-    // Use chrome object as fallback (Chrome, Edge, etc.)
-    if (window.chrome?.runtime) {
-      return window.chrome;
+    try {
+      // Use the browser object if available (Firefox, etc.)
+      if (window.browser) {
+        console.log("Using Firefox/browser API");
+        return window.browser;
+      }
+      
+      // Use chrome object as fallback (Chrome, Edge, etc.)
+      if (window.chrome?.runtime) {
+        console.log("Using Chrome API");
+        return window.chrome;
+      }
+    } catch (e) {
+      console.error("Error accessing browser APIs:", e);
     }
   }
   
   // For preview/web environment, return a mock implementation
+  console.log('Using mock browser API for web/preview environment');
   return createMockBrowserAPI();
 }
 
 // Create a mock browser API for preview/web environment
 function createMockBrowserAPI() {
-  console.log('Using mock browser API for web/preview environment');
+  console.log('Creating mock browser API');
   
   // Simple in-memory storage
   const storageData: Record<string, any> = {};
@@ -132,4 +147,31 @@ export function detectBrowser(): string {
   if (userAgent.indexOf('opera') !== -1 || userAgent.indexOf('opr') !== -1) return 'opera';
   
   return 'unknown';
+}
+
+// Check if the extension is properly initialized
+export function checkExtensionInitialization(): boolean {
+  try {
+    const api = getBrowserAPI();
+    return !!api?.runtime?.id;
+  } catch (e) {
+    console.error("Extension initialization check failed:", e);
+    return false;
+  }
+}
+
+// Validate that critical extension APIs are available
+export function validateExtensionAPIs(): {valid: boolean, missing: string[]} {
+  const missingAPIs: string[] = [];
+  const api = getBrowserAPI();
+  
+  if (!api) missingAPIs.push('browser/chrome API');
+  if (!api?.runtime) missingAPIs.push('runtime API');
+  if (!api?.storage?.local) missingAPIs.push('storage.local API');
+  if (!api?.tabs) missingAPIs.push('tabs API');
+  
+  return {
+    valid: missingAPIs.length === 0,
+    missing: missingAPIs
+  };
 }

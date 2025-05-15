@@ -34,46 +34,80 @@ export default defineConfig(({ mode }) => {
       mode === 'development' && componentTagger(),
       {
         name: 'copy-manifest-files',
-        // Change to closeBundle to ensure it runs at the end of the build process
+        // Copy manifest files at buildStart to ensure they're available earlier
+        buildStart() {
+          // Ensure dist directory exists
+          if (!fs.existsSync('./dist')) {
+            fs.mkdirSync('./dist', { recursive: true });
+          }
+          
+          // Copy manifest.json first for browser extensions
+          console.log('Copying manifest.json to dist directory...');
+          try {
+            if (fs.existsSync('./public/manifest.json')) {
+              fs.copyFileSync('./public/manifest.json', './dist/manifest.json');
+              console.log('✅ Copied manifest.json to dist folder');
+            } else {
+              console.error('❌ manifest.json not found in public folder! Extension will not load.');
+            }
+          } catch (error) {
+            console.error('❌ Error copying manifest.json:', error);
+          }
+        },
+        // Also use closeBundle to ensure files are copied at the end of build
         closeBundle() {
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
           }
           
-          // Copy manifest files
-          console.log('Copying manifest files to dist directory...');
+          // Copy all extension files
+          console.log('Copying extension files to dist directory...');
           
           const filesToCopy = [
-            { src: './public/manifest.json', dest: './dist/manifest.json' },
-            { src: './public/manifest.edge.json', dest: './dist/manifest.edge.json' },
-            { src: './public/manifest.firefox.json', dest: './dist/manifest.firefox.json' },
-            { src: './public/browser-polyfill.min.js', dest: './dist/browser-polyfill.min.js' },
-            { src: './public/icon-16.png', dest: './dist/icon-16.png' },
-            { src: './public/icon-48.png', dest: './dist/icon-48.png' },
-            { src: './public/icon-128.png', dest: './dist/icon-128.png' },
-            { src: './public/icon-16-active.png', dest: './dist/icon-16-active.png' },
-            { src: './public/icon-48-active.png', dest: './dist/icon-48-active.png' },
-            { src: './public/icon-128-active.png', dest: './dist/icon-128-active.png' },
-            { src: './public/favicon.ico', dest: './dist/favicon.ico' },
-            { src: './public/placeholder.svg', dest: './dist/placeholder.svg' },
-            { src: './public/content.js', dest: './dist/content.js' },
-            { src: './public/background.js', dest: './dist/background.js' },
-            { src: './public/mercari-content.js', dest: './dist/mercari-content.js' },
+            { src: './public/manifest.json', dest: './dist/manifest.json', critical: true },
+            { src: './public/manifest.edge.json', dest: './dist/manifest.edge.json', critical: false },
+            { src: './public/manifest.firefox.json', dest: './dist/manifest.firefox.json', critical: false },
+            { src: './public/browser-polyfill.min.js', dest: './dist/browser-polyfill.min.js', critical: true },
+            { src: './public/icon-16.png', dest: './dist/icon-16.png', critical: true },
+            { src: './public/icon-48.png', dest: './dist/icon-48.png', critical: true },
+            { src: './public/icon-128.png', dest: './dist/icon-128.png', critical: true },
+            { src: './public/icon-16-active.png', dest: './dist/icon-16-active.png', critical: false },
+            { src: './public/icon-48-active.png', dest: './dist/icon-48-active.png', critical: false },
+            { src: './public/icon-128-active.png', dest: './dist/icon-128-active.png', critical: false },
+            { src: './public/favicon.ico', dest: './dist/favicon.ico', critical: false },
+            { src: './public/placeholder.svg', dest: './dist/placeholder.svg', critical: false },
+            { src: './public/content.js', dest: './dist/content.js', critical: true },
+            { src: './public/background.js', dest: './dist/background.js', critical: true },
+            { src: './public/mercari-content.js', dest: './dist/mercari-content.js', critical: true },
           ];
           
           // Copy each file if it exists
-          for (const { src, dest } of filesToCopy) {
+          let criticalError = false;
+          for (const { src, dest, critical } of filesToCopy) {
             try {
               if (fs.existsSync(src)) {
                 fs.copyFileSync(src, dest);
                 console.log(`✅ Copied ${path.basename(src)} to dist folder`);
               } else {
-                console.warn(`⚠️ Could not find ${src}`);
+                const message = `Could not find ${src}`;
+                if (critical) {
+                  console.error(`❌ CRITICAL: ${message} - Extension will not work!`);
+                  criticalError = true;
+                } else {
+                  console.warn(`⚠️ ${message}`);
+                }
               }
             } catch (error) {
               console.error(`Error copying ${src}:`, error);
+              if (critical) criticalError = true;
             }
+          }
+          
+          if (criticalError) {
+            console.error('❌ CRITICAL ERRORS detected! Extension may not load properly.');
+          } else {
+            console.log('✅ All critical extension files copied successfully.');
           }
         }
       }
