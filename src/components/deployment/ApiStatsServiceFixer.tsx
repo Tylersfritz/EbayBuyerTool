@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 import { getApiStats, ApiStatsParams } from '@/api/apiStatsService';
 import { getApiConfig, saveApiConfig } from '@/api/apiConfig';
-import { isExtensionEnvironment } from '@/api/apiConfig';
+import { isExtensionEnvironment } from '@/utils/browserUtils';
 
 const ApiStatsServiceFixer: React.FC = () => {
   const [baseUrl, setBaseUrl] = useState('');

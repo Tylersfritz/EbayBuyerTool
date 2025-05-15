@@ -61,7 +61,6 @@ export default defineConfig(({ mode }) => {
         external: ['webextension-polyfill']
       },
       assetsInlineLimit: 0,
-      // Changed from false to true to properly copy public assets
       copyPublicDir: true
     }
   };
