@@ -52,7 +52,7 @@ filesToCopy.forEach(file => {
   }
 });
 
-// Also copy content.js and background.js if they aren't being bundled correctly
+// Also copy content.js, background.js, and mercari-content.js if they aren't being bundled correctly
 ['content.js', 'background.js', 'mercari-content.js'].forEach(file => {
   const sourcePath = path.join('./public', file);
   const destPath = path.join('./dist', file);

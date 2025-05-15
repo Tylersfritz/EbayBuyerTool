@@ -3,7 +3,8 @@
 // API Configuration Utility for DealHavenAI
 // This utility handles environment detection and API URL configuration
 
-import { getBrowserAPI } from '@/utils/browserUtils';
+// Direct import of isExtensionEnvironment to avoid circular dependency
+import { getBrowserAPI, isExtensionEnvironment } from '@/utils/browserUtils';
 
 // Default API URLs
 const DEFAULT_API_BASE_URL = 'https://ebay-buyer-tool-zp52.vercel.app/api';
@@ -30,14 +31,6 @@ interface ApiSettingsStorage {
 }
 
 /**
- * Detect whether we're running in an extension environment
- */
-export function isExtensionEnvironment(): boolean {
-  const browserAPI = getBrowserAPI();
-  return browserAPI.isExtensionEnvironment();
-}
-
-/**
  * Gets the API configuration based on the current environment
  * Checks storage first (for extension settings), then falls back to defaults
  */
@@ -57,7 +50,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
 
     try {
       // Fixed: Remove type arguments from the storage.get call
-      const result = await browserAPI.storage.get('apiSettings');
+      const result = await browserAPI.storage.local.get('apiSettings');
       const apiSettings = (result as ApiSettingsStorage).apiSettings;
 
       if (apiSettings?.baseUrl) {
@@ -100,8 +93,8 @@ export async function saveApiConfig(config: Partial<ApiConfig>): Promise<boolean
   }
 
   try {
-    // Fixed: Remove type arguments from the storage.get call
-    const result = await browserAPI.storage.get('apiSettings');
+    // Fixed: Use browserAPI.storage.local directly
+    const result = await browserAPI.storage.local.get('apiSettings');
     const currentSettings = (result as ApiSettingsStorage).apiSettings || {};
 
     const newSettings = {
@@ -109,7 +102,7 @@ export async function saveApiConfig(config: Partial<ApiConfig>): Promise<boolean
       ...config
     };
 
-    await browserAPI.storage.set({ apiSettings: newSettings });
+    await browserAPI.storage.local.set({ apiSettings: newSettings });
     return true;
   } catch (error) {
     console.error('Error saving API settings to extension storage:', error);

@@ -4,7 +4,6 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { componentTagger } from "lovable-tagger";
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
 export default defineConfig(({ mode }) => {
   // Create public directory if it doesn't exist
@@ -58,6 +57,9 @@ export default defineConfig(({ mode }) => {
             { src: './public/icon-128-active.png', dest: './dist/icon-128-active.png' },
             { src: './public/favicon.ico', dest: './dist/favicon.ico' },
             { src: './public/placeholder.svg', dest: './dist/placeholder.svg' },
+            { src: './public/content.js', dest: './dist/content.js' },
+            { src: './public/background.js', dest: './dist/background.js' },
+            { src: './public/mercari-content.js', dest: './dist/mercari-content.js' },
           ];
           
           // Copy each file if it exists
@@ -92,18 +94,12 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       rollupOptions: {
         input: {
-          index: path.resolve(__dirname, 'index.html'),
-          content: path.resolve(__dirname, 'public/content.js'),
-          background: path.resolve(__dirname, 'public/background.js'),
-          mercari: path.resolve(__dirname, 'public/mercari-content.js'),
+          index: path.resolve(__dirname, 'index.html')
         },
         output: {
-          entryFileNames: (chunkInfo) => {
-            if (['content', 'background', 'mercari'].includes(chunkInfo.name)) {
-              return '[name].js';
-            }
-            return 'assets/[name]-[hash].js';
-          }
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]'
         },
         external: ['webextension-polyfill']
       },
