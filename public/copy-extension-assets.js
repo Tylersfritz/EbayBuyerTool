@@ -1,12 +1,15 @@
 
 // This script can be used to manually copy extension assets if the build process fails to do so
+// IMPORTANT: This version DOES NOT modify package.json or any read-only files
 
 const fs = require('fs');
 const path = require('path');
 
+console.log('📦 Copying extension assets to dist directory...');
+
 // Ensure dist directory exists
 if (!fs.existsSync('./dist')) {
-  fs.mkdirSync('./dist');
+  fs.mkdirSync('./dist', { recursive: true });
   console.log('Created dist directory');
 }
 
@@ -27,6 +30,9 @@ const filesToCopy = [
 ];
 
 // Copy each file
+let successCount = 0;
+let warningCount = 0;
+
 filesToCopy.forEach(file => {
   const sourcePath = path.join('./public', file);
   const destPath = path.join('./dist', file);
@@ -35,12 +41,34 @@ filesToCopy.forEach(file => {
     if (fs.existsSync(sourcePath)) {
       fs.copyFileSync(sourcePath, destPath);
       console.log(`✅ Copied ${file} to dist folder`);
+      successCount++;
     } else {
       console.warn(`⚠️ Could not find ${file} in public folder`);
+      warningCount++;
     }
   } catch (error) {
-    console.error(`Error copying ${file}:`, error);
+    console.error(`❌ Error copying ${file}:`, error);
+    warningCount++;
   }
 });
 
-console.log('Done copying extension assets');
+// Also copy content.js and background.js if they aren't being bundled correctly
+['content.js', 'background.js', 'mercari-content.js'].forEach(file => {
+  const sourcePath = path.join('./public', file);
+  const destPath = path.join('./dist', file);
+  
+  // Only copy if source exists and destination doesn't
+  if (fs.existsSync(sourcePath) && !fs.existsSync(destPath)) {
+    try {
+      fs.copyFileSync(sourcePath, destPath);
+      console.log(`✅ Copied ${file} to dist folder`);
+      successCount++;
+    } catch (error) {
+      console.error(`❌ Error copying ${file}:`, error);
+      warningCount++;
+    }
+  }
+});
+
+console.log(`\n📦 Done copying extension assets: ${successCount} files copied, ${warningCount} warnings`);
+console.log('Run the validation script next to verify the build is complete and valid.');
