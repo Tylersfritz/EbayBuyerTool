@@ -40,8 +40,8 @@ export function useBrowserCompatibility() {
         const testKey = 'browserCompatTest';
         const testValue = { timestamp: new Date().toISOString() };
         
-        await browserAPI.storage.set({ [testKey]: testValue });
-        const retrieved = await browserAPI.storage.get<any>(testKey);
+        await browserAPI.storage.local.set({ [testKey]: testValue });
+        const retrieved = await browserAPI.storage.local.get(testKey);
         
         results['storage'] = {
           available: true,

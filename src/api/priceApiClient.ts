@@ -1,3 +1,4 @@
+
 // This file is kept in sync with the original in pages/api/price-check.cjs
 
 import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
@@ -73,7 +74,7 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
   
   return {
     averagePrice: avgPrice,
-    marketRate: avgPrice,
+    marketRate: avgPrice, // Using average price as market rate
     priceRange: {
       min: avgPrice * 0.85,
       max: avgPrice * 1.15

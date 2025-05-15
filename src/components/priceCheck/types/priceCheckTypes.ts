@@ -4,7 +4,7 @@
 export interface DataQuality {
   confidence: 'high' | 'medium' | 'low';
   sources: string[];
-  warning?: string;
+  warning?: string | null;
   itemSpecifics?: {
     make?: string | null;
     model?: string | null;
@@ -15,6 +15,7 @@ export interface DataQuality {
 
 export interface PriceCheckResponse {
   averagePrice: number;
+  marketRate?: number; // Added to fix type errors
   itemCount: number;
   priceRange: { min: number; max: number };
   priceHistory?: { date: string; price: number }[];
@@ -31,6 +32,7 @@ export interface PriceCheckResponse {
 export interface ListingInfo {
   title: string;
   currentPrice: number;
+  price?: number; // Added for backward compatibility
   buyItNowPrice?: number;
   seller?: string;
   condition?: string;
@@ -40,6 +42,7 @@ export interface ListingInfo {
   isAuction?: boolean;
   itemSpecifics?: Record<string, string>;
   itemId?: string;
+  itemUrl?: string; // Added to fix SnipeForm error
   quantityAvailable?: number;
   returnPolicy?: string;
   sellerFeedbackScore?: number;
@@ -49,6 +52,12 @@ export interface ListingInfo {
   watchers?: number;
   originalPrice?: number;
   discountPercentage?: number;
+  // Added for backward compatibility with older code
+  listingType?: {
+    isAuction?: boolean;
+    bidsCount?: number;
+    endTime?: string;
+  };
 }
 
 export interface PriceCheckState {

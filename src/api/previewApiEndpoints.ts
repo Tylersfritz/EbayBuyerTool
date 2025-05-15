@@ -54,11 +54,16 @@ export function setupPreviewApiRoutes() {
   const originalFetch = window.fetch;
   
   window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
-    const url = typeof input === 'string' ? input : input.url;
+    // Extract URL string from input, whether it's a string, Request, or URL
+    const urlString = typeof input === 'string' 
+      ? input 
+      : input instanceof Request 
+        ? input.url 
+        : input.toString();
     
     // Check if this is a call to our API endpoints
-    if (url.includes('/api/price-check')) {
-      console.log('Intercepted API call in preview environment:', url);
+    if (urlString.includes('/api/price-check')) {
+      console.log('Intercepted API call in preview environment:', urlString);
       
       try {
         const params = init?.body ? JSON.parse(init.body as string) as PriceCheckParams : {} as PriceCheckParams;

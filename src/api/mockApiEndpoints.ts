@@ -49,7 +49,7 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
   
   return {
     averagePrice,
-    marketRate: averagePrice,
+    marketRate: averagePrice, // Using average price as market rate
     priceHistory,
     priceRange: {
       min: minPrice,

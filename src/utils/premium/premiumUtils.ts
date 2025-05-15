@@ -1,9 +1,11 @@
-
 /**
  * Utility functions for premium status
  */
 import { supabase } from "@/integrations/supabase/client";
-import { browserAPI } from "../browserUtils";
+import { getBrowserAPI } from '../browserUtils';
+
+// Get a reference to the browser API
+const browserAPI = getBrowserAPI();
 
 // Check premium status 
 export async function checkPremiumStatus(): Promise<boolean> {

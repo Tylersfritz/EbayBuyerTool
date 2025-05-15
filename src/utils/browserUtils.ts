@@ -46,6 +46,9 @@ function createMockBrowserAPI() {
           console.log('Mock onMessage listener added');
         },
         removeListener: (callback: Function) => {}
+      },
+      getURL: (path: string) => {
+        return `mock-extension://${path}`;
       }
     },
     storage: {
@@ -97,6 +100,9 @@ function createMockBrowserAPI() {
   };
 }
 
+// Export a browserAPI object for backward compatibility
+export const browserAPI = getBrowserAPI();
+
 // Helper to safely check if we're in a browser environment
 export const isBrowser = typeof window !== 'undefined';
 
@@ -111,4 +117,19 @@ export function isLocalhost(): boolean {
     hostname.startsWith('192.168.') ||
     hostname.endsWith('.local')
   );
+}
+
+// Browser detection utility
+export function detectBrowser(): string {
+  if (typeof window === 'undefined') return 'unknown';
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  
+  if (userAgent.indexOf('firefox') !== -1) return 'firefox';
+  if (userAgent.indexOf('edg') !== -1) return 'edge';
+  if (userAgent.indexOf('chrome') !== -1) return 'chrome';
+  if (userAgent.indexOf('safari') !== -1) return 'safari';
+  if (userAgent.indexOf('opera') !== -1 || userAgent.indexOf('opr') !== -1) return 'opera';
+  
+  return 'unknown';
 }
