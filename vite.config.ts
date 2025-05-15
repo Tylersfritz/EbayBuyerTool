@@ -53,11 +53,11 @@ export default defineConfig(({ mode }) => {
               try {
                 const stats = fs.statSync(path.join('./public', file));
                 console.log(`   - ${file} (${stats.size} bytes)`);
-              } catch (err) {
-                console.log(`   - ${file} (error getting size)`);
+              } catch (err: any) {
+                console.log(`   - ${file} (error getting size: ${err.message})`);
               }
             });
-          } catch (err) {
+          } catch (err: any) {
             console.error('❌ Error reading public directory:', err.message);
           }
           
@@ -79,8 +79,8 @@ export default defineConfig(({ mode }) => {
               } catch (jsonError: any) {
                 console.error('❌ manifest.json is NOT valid JSON:', jsonError.message);
               }
-            } catch (err) {
-              console.error('❌ Error reading manifest.json:', err);
+            } catch (err: any) {
+              console.error('❌ Error reading manifest.json:', err.message);
             }
           } else {
             console.error('❌ CRITICAL ERROR: public/manifest.json NOT FOUND!');
@@ -109,8 +109,8 @@ export default defineConfig(({ mode }) => {
               } else {
                 console.error(`❌ CRITICAL ERROR: ${src} not found!`);
               }
-            } catch (error) {
-              console.error(`❌ Error copying ${src}:`, error);
+            } catch (err: any) {
+              console.error(`❌ Error copying ${src}:`, err.message);
             }
           }
         },
@@ -166,8 +166,8 @@ export default defineConfig(({ mode }) => {
                   console.warn(`⚠️ ${message}`);
                 }
               }
-            } catch (error) {
-              console.error(`Error copying ${src}:`, error);
+            } catch (err: any) {
+              console.error(`Error copying ${src}:`, err.message);
               if (critical) criticalError = true;
             }
           }
@@ -187,8 +187,8 @@ export default defineConfig(({ mode }) => {
               } catch (jsonError: any) {
                 console.error('❌ manifest.json in dist is NOT valid JSON:', jsonError.message);
               }
-            } catch (err) {
-              console.error('❌ Error verifying manifest.json in dist:', err);
+            } catch (err: any) {
+              console.error('❌ Error verifying manifest.json in dist:', err.message);
             }
           } else {
             console.error('❌ CRITICAL: manifest.json NOT found in dist folder!');
