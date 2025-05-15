@@ -10,6 +10,10 @@ const { execSync } = require('child_process');
 console.log('🔎 DealHavenAI Safe Rebuild Process');
 console.log('==================================');
 
+// Get the absolute path to the project directory
+const projectDir = path.resolve('.');
+console.log(`Working directory: ${projectDir}`);
+
 // 1. Run the fix-extension-files script
 console.log('\n1️⃣ Fixing extension files...');
 try {
@@ -17,12 +21,12 @@ try {
   console.log('✅ Extension files fixed successfully');
 } catch (error) {
   console.error('❌ Error fixing extension files:', error.message);
-  console.log('Continuing with the build process anyway...');
+  console.error('Continuing with the build process anyway...');
 }
 
 // 2. Check for merge conflicts in index.html
 console.log('\n2️⃣ Checking for merge conflicts in index.html...');
-const indexPath = path.join(__dirname, '..', 'index.html');
+const indexPath = path.join(projectDir, 'index.html');
 
 if (fs.existsSync(indexPath)) {
   try {
@@ -52,7 +56,7 @@ if (fs.existsSync(indexPath)) {
 
 // 3. Clean dist directory
 console.log('\n3️⃣ Cleaning dist directory...');
-const distDir = path.join(__dirname, '..', 'dist');
+const distDir = path.join(projectDir, 'dist');
 
 if (fs.existsSync(distDir)) {
   console.log('Removing existing dist directory...');
@@ -106,25 +110,27 @@ criticalFiles.forEach(file => {
   const filePath = path.join(distDir, file);
   if (!fs.existsSync(filePath)) {
     missingCriticalFiles.push(file);
+    console.error(`❌ Missing: ${file}`);
   } else {
-    console.log(`✅ ${file} exists in dist folder`);
+    try {
+      const stats = fs.statSync(filePath);
+      console.log(`✅ ${file} exists in dist folder (${stats.size} bytes)`);
+    } catch (err) {
+      console.log(`✅ ${file} exists in dist folder`);
+    }
   }
 });
 
 if (missingCriticalFiles.length > 0) {
   console.error('\n⚠️ Warning: Some critical files are missing from dist:');
   console.error(missingCriticalFiles.join(', '));
-  console.log('\nYou may need to manually copy these from public/ to dist/');
-} else {
-  console.log('\n✅ All critical files exist in dist folder!');
-}
+  console.log('\nAttempting to copy these from public/ to dist/');
 
-// 6. Copy any missing files if needed
-if (missingCriticalFiles.length > 0) {
-  console.log('\n6️⃣ Attempting to copy missing files from public to dist...');
+  // 6. Copy any missing files if needed
+  console.log('\n6️⃣ Copying missing files from public to dist...');
   
   missingCriticalFiles.forEach(file => {
-    const srcPath = path.join(__dirname, file);
+    const srcPath = path.join(projectDir, 'public', file);
     const destPath = path.join(distDir, file);
     
     if (fs.existsSync(srcPath)) {
@@ -140,9 +146,32 @@ if (missingCriticalFiles.length > 0) {
   });
 }
 
+// 7. Final check - does manifest.json exist in dist?
+if (!fs.existsSync(path.join(distDir, 'manifest.json'))) {
+  console.error('\n❌ CRITICAL ERROR: manifest.json is missing from dist directory!');
+  console.log('Attempting emergency copy of manifest.json...');
+  
+  const publicManifestPath = path.join(projectDir, 'public', 'manifest.json');
+  const distManifestPath = path.join(distDir, 'manifest.json');
+  
+  if (fs.existsSync(publicManifestPath)) {
+    try {
+      fs.copyFileSync(publicManifestPath, distManifestPath);
+      console.log('✅ Emergency copy of manifest.json succeeded');
+    } catch (err) {
+      console.error('❌ Failed to copy manifest.json:', err.message);
+      process.exit(1);
+    }
+  } else {
+    console.error('❌ Could not find manifest.json in public directory either!');
+    process.exit(1);
+  }
+}
+
 console.log('\n🎉 Extension rebuild process completed!');
 console.log('\nTo load your extension in Chrome:');
 console.log('1. Go to chrome://extensions/');
 console.log('2. Enable "Developer mode"');
 console.log('3. Click "Load unpacked" and select the dist folder:');
 console.log(`   ${path.resolve(distDir)}`);
+

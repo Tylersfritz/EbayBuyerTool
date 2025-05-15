@@ -3,6 +3,7 @@
  * Script to fix common extension file issues
  * - Creates missing icon-16-active.png
  * - Validates manifest.json and critical files
+ * - Handles path issues
  */
 
 const fs = require('fs');
@@ -11,11 +12,17 @@ const path = require('path');
 console.log('🔧 DealHavenAI Extension File Fixer');
 console.log('=================================');
 
-const publicDir = path.resolve('./public');
+// Get the absolute path to the project directory
+const projectDir = path.resolve('.');
+console.log(`Working directory: ${projectDir}`);
+
+const publicDir = path.join(projectDir, 'public');
+const distDir = path.join(projectDir, 'dist');
 
 // Check if public directory exists
 if (!fs.existsSync(publicDir)) {
   console.error('❌ Error: public directory not found!');
+  console.log('Current directory contains:', fs.readdirSync('.').join(', '));
   process.exit(1);
 }
 
@@ -112,5 +119,71 @@ if (fs.existsSync(manifestPath)) {
   console.error('❌ Error: manifest.json not found!');
 }
 
+// 4. Check index.html files for consistency
+console.log('\n4️⃣ Checking index.html files...');
+
+const rootIndexPath = path.join(projectDir, 'index.html');
+const publicIndexPath = path.join(publicDir, 'index.html');
+
+if (fs.existsSync(rootIndexPath)) {
+  console.log('✅ Found index.html in project root');
+  
+  try {
+    const rootIndexContent = fs.readFileSync(rootIndexPath, 'utf8');
+    
+    // Check for merge conflict markers
+    const hasConflictMarkers = 
+      rootIndexContent.includes('<<<<<<<') || 
+      rootIndexContent.includes('=======') || 
+      rootIndexContent.includes('>>>>>>>');
+    
+    if (hasConflictMarkers) {
+      console.error('❌ index.html contains merge conflict markers! These need to be resolved.');
+    } else {
+      console.log('✅ index.html has no merge conflict markers');
+    }
+    
+    // Check if polyfill is referenced
+    if (!rootIndexContent.includes('browser-polyfill.min.js')) {
+      console.warn('⚠️ index.html does not reference browser-polyfill.min.js');
+    } else {
+      console.log('✅ index.html references browser-polyfill.min.js correctly');
+    }
+  } catch (error) {
+    console.error('❌ Error reading index.html:', error.message);
+  }
+} else {
+  console.error('❌ index.html not found in project root!');
+}
+
+if (fs.existsSync(publicIndexPath)) {
+  console.log('✅ Found index.html in public directory');
+  
+  try {
+    const publicIndexContent = fs.readFileSync(publicIndexPath, 'utf8');
+    
+    // Check for base href tag
+    if (publicIndexContent.includes('<base href="/"')) {
+      console.warn('⚠️ public/index.html contains <base href="/"> tag which can cause issues with Chrome extensions');
+    }
+  } catch (error) {
+    console.error('❌ Error reading public/index.html:', error.message);
+  }
+} else {
+  console.warn('⚠️ index.html not found in public directory');
+}
+
+// 5. Create dist directory if it doesn't exist
+if (!fs.existsSync(distDir)) {
+  console.log('\n5️⃣ Creating dist directory...');
+  try {
+    fs.mkdirSync(distDir, { recursive: true });
+    console.log('✅ Created dist directory');
+  } catch (error) {
+    console.error('❌ Error creating dist directory:', error.message);
+  }
+}
+
 console.log('\n✅ File check and fix process completed!');
-console.log('\nNext step: Run "npm run build" to rebuild your extension');
+console.log('\nNext step: Run "node public/safe-rebuild-extension.js" to rebuild your extension');
+
