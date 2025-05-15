@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,15 +9,17 @@ import { DownloadCloud, RefreshCw, Paintbrush } from 'lucide-react';
 
 type IconStyle = 'gradient' | 'flat' | 'outline';
 
+interface IconSet {
+  icon16: string;
+  icon48: string;
+  icon128: string;
+  icon16Active: string;
+  icon48Active: string;
+  icon128Active: string;
+}
+
 const ExtensionIconGenerator: React.FC = () => {
-  const [icons, setIcons] = useState<{
-    icon16: string;
-    icon48: string;
-    icon128: string;
-    icon16Active: string;
-    icon48Active: string;
-    icon128Active: string;
-  } | null>(null);
+  const [icons, setIcons] = useState<IconSet | null>(null);
   
   const [primaryColor, setPrimaryColor] = useState('#1EAEDB');
   const [secondaryColor, setSecondaryColor] = useState('#ffffff');
@@ -31,16 +32,7 @@ const ExtensionIconGenerator: React.FC = () => {
   
   const generateIcons = () => {
     const generatedIcons = generateDefaultIcons(primaryColor, secondaryColor, iconStyle);
-    if (generatedIcons.icon16Active && generatedIcons.icon48Active && generatedIcons.icon128Active) {
-      setIcons(generatedIcons as {
-        icon16: string;
-        icon48: string;
-        icon128: string;
-        icon16Active: string;
-        icon48Active: string;
-        icon128Active: string;
-      });
-    }
+    setIcons(generatedIcons as IconSet);
   };
   
   useEffect(() => {

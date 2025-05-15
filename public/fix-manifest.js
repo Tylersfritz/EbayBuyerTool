@@ -1,4 +1,3 @@
-
 // Fix manifest and generate missing files script
 const fs = require('fs');
 const path = require('path');
