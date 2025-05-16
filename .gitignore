@@ -28,7 +28,6 @@ node_modules/
 dist/
 .vercel/
 *.log
-OneDrive/
 assets
 cd
 dir
