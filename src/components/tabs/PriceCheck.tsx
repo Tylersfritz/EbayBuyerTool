@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { Scan } from 'lucide-react';
-import { usePriceCheck } from '@/hooks/usePriceCheck';
+import { usePriceCheck } from '@/components/priceCheck/usePriceCheck';
 import CurrentListingCard from '@/components/priceCheck/CurrentListingCard';
 import VisualScanner from '@/components/visualScanner/VisualScanner';
 import { ScanResult } from '@/components/visualScanner/VisualScanner';
@@ -15,9 +16,10 @@ import PremiumOnlyLock from '../premium/PremiumOnlyLock';
 
 interface PriceCheckProps {
   isPremium: boolean;
+  onTabChange?: (tabName: string) => void;
 }
 
-const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
+const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
   const [itemId, setItemId] = useState('');
   const [isManual, setIsManual] = useState(false);
   const [isVisualScannerOpen, setIsVisualScannerOpen] = useState(false);
@@ -25,11 +27,9 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
     listingInfo, 
     loadingListingInfo, 
     error, 
-    fetchListingInfo,
-    isCached,
-    cacheHitCount,
-    resetState
-  } = usePriceCheck();
+    handleCheckPrice: fetchListingInfo,
+    testMode
+  } = usePriceCheck(isPremium);
 
   // Navigate to arbitrage tab
   const handleNavigateToArbitrage = () => {
@@ -38,6 +38,9 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
       const arbitrageTab = document.querySelector('[data-value="arbitrage"]');
       if (arbitrageTab instanceof HTMLElement) {
         arbitrageTab.click();
+      } else if (onTabChange) {
+        // Use the onTabChange prop if available
+        onTabChange('arbitrage');
       } else {
         toast.error("Couldn't find the arbitrage tab. Please navigate manually.");
       }
@@ -51,6 +54,8 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
             const premiumTab = document.querySelector('[data-value="premium"]');
             if (premiumTab instanceof HTMLElement) {
               premiumTab.click();
+            } else if (onTabChange) {
+              onTabChange('premium');
             }
           }
         },
@@ -60,7 +65,7 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
 
   const handleItemCheck = () => {
     if (itemId.trim() !== '') {
-      fetchListingInfo(itemId.trim());
+      fetchListingInfo();
     } else {
       toast.error('Please enter a valid eBay item ID.');
     }
@@ -78,22 +83,22 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
     setTimeout(() => {
       toast.info(`Performing price check for: ${scanResult.title}`);
       
-      // Simulate a search with the scanned product name
-      if (scanResult.itemId) {
-        fetchListingInfo(scanResult.itemId);
+      // Check if scanResult has a title to use for searching
+      if (scanResult.title) {
+        setItemId(scanResult.title);
+        fetchListingInfo();
       }
     }, 500);
   };
 
   const handleReset = () => {
-    resetState();
     setItemId('');
   };
 
   useEffect(() => {
     // Automatically fetch listing info if itemId is present on mount
     if (itemId) {
-      fetchListingInfo(itemId);
+      fetchListingInfo();
     }
   }, [itemId, fetchListingInfo]);
 
@@ -162,12 +167,6 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
         </div>
       </Card>
       
-      {isCached && cacheHitCount > 0 && (
-        <Badge variant="secondary">
-          Cached Result - {cacheHitCount} hits
-        </Badge>
-      )}
-      
       {error && (
         <Card className="w-full">
           <div className="flex flex-col space-y-1.5 p-4">
@@ -183,8 +182,7 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
         <VisualScanner
           isPremium={isPremium}
           onScanComplete={handleScanComplete}
-          onClose={() => setIsVisualScannerOpen(false)}
-          isOpen={isVisualScannerOpen}
+          onCancel={() => setIsVisualScannerOpen(false)}
         />
       )}
       
