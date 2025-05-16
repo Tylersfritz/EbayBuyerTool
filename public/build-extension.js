@@ -271,4 +271,3 @@ if (allFilesCopied && !criticalErrors) {
   console.error('\n❌ Build completed with critical errors. Please check the messages above.');
   process.exit(1);
 }
-
