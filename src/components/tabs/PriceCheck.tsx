@@ -28,7 +28,8 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
     loadingListingInfo, 
     error, 
     handleCheckPrice: fetchListingInfo,
-    testMode
+    testMode,
+    hasReachedLimit
   } = usePriceCheck(isPremium);
 
   // Navigate to arbitrage tab
@@ -102,43 +103,15 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
     }
   }, [itemId, fetchListingInfo]);
 
-  if (!isPremium) {
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Price Check</h2>
-        </div>
-        
-        <PremiumOnlyLock 
-          title="Premium Feature: Price Check" 
-          description="Check prices, get deal scores, and more."
-          showPreview={true}
-        >
-          <Card className="w-full">
-            <div className="flex flex-col space-y-1.5 p-4">
-              <div className="flex items-center space-x-2">
-                <Input 
-                  type="text" 
-                  placeholder="Enter eBay Item ID" 
-                  value={itemId}
-                  onChange={(e) => setItemId(e.target.value)}
-                  disabled={true}
-                />
-                <Button variant="premium" size="sm" disabled={true}>
-                  Check Price
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </PremiumOnlyLock>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Price Check</h2>
+        {!isPremium && (
+          <Badge variant="outline" className="text-xs">
+            5 checks/month
+          </Badge>
+        )}
       </div>
       
       <Card className="w-full">
@@ -149,14 +122,47 @@ const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
               placeholder="Enter eBay Item ID" 
               value={itemId}
               onChange={(e) => setItemId(e.target.value)}
+              disabled={hasReachedLimit && !isPremium}
             />
-            <Button variant="premium" size="sm" onClick={handleItemCheck} disabled={loadingListingInfo}>
+            <Button 
+              variant="premium" 
+              size="sm" 
+              onClick={handleItemCheck} 
+              disabled={loadingListingInfo || (hasReachedLimit && !isPremium)}
+            >
               Check Price
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setIsVisualScannerOpen(true)}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsVisualScannerOpen(true)} 
+              disabled={hasReachedLimit && !isPremium}
+            >
               <Scan className="h-4 w-4" />
             </Button>
           </div>
+          
+          {hasReachedLimit && !isPremium && (
+            <div className="text-sm text-amber-600 mt-2 p-2 bg-amber-50 rounded border border-amber-100">
+              You've reached your monthly limit of 5 price checks. 
+              <Button 
+                variant="link" 
+                className="p-0 h-auto ml-1 text-sm text-blue-600"
+                onClick={() => {
+                  if (onTabChange) {
+                    onTabChange('premium');
+                  } else {
+                    const premiumTab = document.querySelector('[data-value="premium"]');
+                    if (premiumTab instanceof HTMLElement) {
+                      premiumTab.click();
+                    }
+                  }
+                }}
+              >
+                Upgrade to Premium
+              </Button>
+            </div>
+          )}
           
           <div className="flex items-center space-x-2">
             <Switch id="manual-switch" checked={isManual} onCheckedChange={setIsManual} />

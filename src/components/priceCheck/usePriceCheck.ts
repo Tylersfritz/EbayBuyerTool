@@ -1,6 +1,6 @@
 
 // src/components/priceCheck/usePriceCheck.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCurrentListing } from '@/utils/listing/listingUtils';
 import { getPriceCheck } from '@/api/priceApiService';
 import { ListingInfo, PriceCheckState, PriceCheckResponse } from './types/priceCheckTypes';
@@ -13,6 +13,7 @@ import {
 } from './utils/mockData';
 import { useModeContext } from '@/context/ModeContext';
 import { toast } from '@/components/ui/sonner';
+import { trackPriceCheckUsage, hasReachedPriceCheckLimit } from '@/utils/premium/premiumUtils';
 
 const MAX_RETRIES = 2;
 const API_TIMEOUT_MS = 8000; // 8 seconds
@@ -27,8 +28,24 @@ export function usePriceCheck(isPremium: boolean) {
     testMode: false,
     error: null
   });
+  const [hasReachedLimit, setHasReachedLimit] = useState<boolean>(false);
 
   const { isAuctionMode } = useModeContext();
+  
+  // Check usage limits on load
+  useEffect(() => {
+    const checkUsageLimit = async () => {
+      if (!isPremium) {
+        const limitReached = await hasReachedPriceCheckLimit();
+        setHasReachedLimit(limitReached);
+        if (limitReached) {
+          console.log('User has reached the free tier price check limit');
+        }
+      }
+    };
+    
+    checkUsageLimit();
+  }, [isPremium]);
 
   useEffect(() => {
     console.log('usePriceCheck useEffect triggered, isAuctionMode:', isAuctionMode);
@@ -140,6 +157,29 @@ export function usePriceCheck(isPremium: boolean) {
       return;
     }
     
+    // Check usage limits for free tier users
+    if (!isPremium) {
+      const limitReached = await hasReachedPriceCheckLimit();
+      setHasReachedLimit(limitReached);
+      if (limitReached) {
+        toast.error("Monthly limit reached", {
+          description: "You've reached your free tier limit of 5 price checks per month. Upgrade to Premium for unlimited checks.",
+          duration: 8000,
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              // Navigation to premium tab
+              const premiumTab = document.querySelector('[data-value="premium"]');
+              if (premiumTab instanceof HTMLElement) {
+                premiumTab.click();
+              }
+            }
+          }
+        });
+        return;
+      }
+    }
+    
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
@@ -178,6 +218,19 @@ export function usePriceCheck(isPremium: boolean) {
           priceData: mockDataAdjusted
         }));
         return mockDataAdjusted;
+      }
+      
+      // Track the price check usage for non-premium users
+      if (!isPremium) {
+        const trackResult = await trackPriceCheckUsage();
+        if (!trackResult) {
+          setHasReachedLimit(true);
+          setState(prev => ({ ...prev, loading: false }));
+          toast.error("Monthly limit reached", {
+            description: "You've reached your free tier limit of 5 price checks per month. Upgrade to Premium for unlimited checks."
+          });
+          return;
+        }
       }
       
       // Set up a timeout for the API call
@@ -257,9 +310,6 @@ export function usePriceCheck(isPremium: boolean) {
         error: error instanceof Error ? error.message : 'An unknown error occurred',
         retryCount: prev.retryCount + 1
       }));
-      
-      // NO automatic fallback to mock data - we want to be explicit about failures
-      // The user can always try again or manually switch to test mode
     }
   };
 
@@ -270,6 +320,7 @@ export function usePriceCheck(isPremium: boolean) {
     loadingListingInfo: state.loadingListingInfo,
     error: state.error,
     handleCheckPrice,
-    testMode: state.testMode
+    testMode: state.testMode,
+    hasReachedLimit
   };
 }

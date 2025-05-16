@@ -14,6 +14,9 @@ interface VisualScanStorage {
   [key: string]: number;
 }
 
+// Constants
+const FREE_MONTHLY_PRICE_CHECK_LIMIT = 5;
+
 /**
  * Check premium status
  */
@@ -189,4 +192,151 @@ export async function getVisualScannerUsageCount(): Promise<number> {
     console.error('Error getting visual scanner usage count:', error);
     return 0;
   }
+}
+
+/**
+ * Track Price Check usage
+ */
+export async function trackPriceCheckUsage(): Promise<boolean> {
+  const browserAPI = getBrowserAPI();
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    
+    // For logged in users, track in Supabase
+    if (session?.session?.user?.id) {
+      // Get the current month key in format YYYY-M (e.g., 2025-5)
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      
+      // Check if the user has already reached the monthly limit
+      const { count, error: countError } = await supabase
+        .from('price_check_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.session.user.id)
+        .eq('month_key', monthKey);
+        
+      if (countError) {
+        console.error('Error checking price check usage count:', countError);
+        return false;
+      }
+      
+      // If user has already used their monthly limit, return false
+      if (count >= FREE_MONTHLY_PRICE_CHECK_LIMIT) {
+        console.error('Monthly price check limit reached');
+        return false;
+      }
+      
+      // Increment usage count
+      const { error } = await supabase
+        .from('price_check_logs')
+        .insert({
+          user_id: session.session.user.id,
+          check_date: now.toISOString(),
+          month_key: monthKey
+        });
+        
+      if (error) {
+        console.error('Error tracking price check usage:', error);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // For development, track in localStorage with monthly limit
+    // Extract year and month for the month_key
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
+    
+    if (browserAPI.isExtensionEnvironment()) {
+      // Get current monthly usage count
+      const result = await browserAPI.storage.get(storageKey);
+      const currentValue = (result as unknown as number) || 0;
+      
+      // Check if monthly limit reached
+      if (currentValue >= FREE_MONTHLY_PRICE_CHECK_LIMIT) {
+        console.error('Monthly price check limit reached');
+        return false;
+      }
+      
+      // Increment usage count
+      const value = currentValue + 1;
+      await browserAPI.storage.set({[storageKey]: value});
+    } else {
+      // For development without browser API, use localStorage with monthly limit
+      const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
+      
+      // Check if monthly limit reached
+      if (current >= FREE_MONTHLY_PRICE_CHECK_LIMIT) {
+        console.error('Monthly price check limit reached');
+        return false;
+      }
+      
+      localStorage.setItem(storageKey, (current + 1).toString());
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error tracking price check usage:', error);
+    return false;
+  }
+}
+
+/**
+ * Get current price check usage count
+ */
+export async function getPriceCheckUsageCount(): Promise<number> {
+  const browserAPI = getBrowserAPI();
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    
+    // For logged in users, get count from Supabase
+    if (session?.session?.user?.id) {
+      // Get the current month key in format YYYY-M (e.g., 2025-5)
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      
+      const { count, error } = await (supabase
+        .from('price_check_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.session.user.id)
+        .eq('month_key', monthKey) as any);
+        
+      if (error) {
+        console.error('Error getting price check usage count:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    }
+    
+    // For development, get count from localStorage
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
+    
+    if (browserAPI.isExtensionEnvironment()) {
+      const result = await browserAPI.storage.get(storageKey);
+      return (result as unknown as number) || 0;
+    } else {
+      return parseInt(localStorage.getItem(storageKey) || '0', 10);
+    }
+  } catch (error) {
+    console.error('Error getting price check usage count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Check if user has reached free tier price check limit
+ */
+export async function hasReachedPriceCheckLimit(): Promise<boolean> {
+  // Premium users have unlimited checks
+  if (await checkPremiumStatus()) {
+    return false;
+  }
+  
+  const count = await getPriceCheckUsageCount();
+  return count >= FREE_MONTHLY_PRICE_CHECK_LIMIT;
 }
