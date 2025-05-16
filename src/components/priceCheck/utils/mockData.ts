@@ -7,12 +7,12 @@ import { ListingInfo } from "../types/priceCheckTypes";
 
 // Mock price check API response
 export const mockPriceCheckData: PriceCheckResponse = {
-  averagePrice: 389.99,
+  averagePrice: 459.99, // Increased from 389.99 to ensure the arbitrage alert shows (>15% profit margin)
   itemCount: 24,
-  priceRange: { min: 329.99, max: 449.99 },
+  priceRange: { min: 329.99, max: 519.99 }, // Adjusted to reflect the higher average
   priceHistory: [
-    { date: "2023-04-25", price: 394.99 },
-    { date: "2023-04-30", price: 389.99 }
+    { date: "2023-04-25", price: 454.99 },
+    { date: "2023-04-30", price: 459.99 }
   ],
   sampleSize: 24,
   dateRange: "2023-04-01 - 2023-04-30",
@@ -129,13 +129,13 @@ export const mockDiscountFixedPriceInfo: ListingInfo = {
 
 // Mock price history data points
 export const mockPriceHistoryData = [
-  { date: "2023-04-01", price: 429.99 },
-  { date: "2023-04-05", price: 424.99 },
-  { date: "2023-04-10", price: 419.99 },
-  { date: "2023-04-15", price: 409.99 },
-  { date: "2023-04-20", price: 399.99 },
-  { date: "2023-04-25", price: 394.99 },
-  { date: "2023-04-30", price: 389.99 }
+  { date: "2023-04-01", price: 489.99 },
+  { date: "2023-04-05", price: 484.99 },
+  { date: "2023-04-10", price: 479.99 },
+  { date: "2023-04-15", price: 469.99 },
+  { date: "2023-04-20", price: 464.99 },
+  { date: "2023-04-25", price: 460.99 },
+  { date: "2023-04-30", price: 459.99 }
 ];
 
 // Mock auction price history (typically more volatility)

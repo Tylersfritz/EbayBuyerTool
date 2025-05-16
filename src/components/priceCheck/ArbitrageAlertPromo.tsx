@@ -19,8 +19,8 @@ const ArbitrageAlertPromo: React.FC<ArbitrageAlertPromoProps> = ({
   // Calculate potential profit percentage
   const potentialProfit = averagePrice > 0 ? ((averagePrice - currentPrice) / currentPrice * 100) : 0;
   
-  // Only show if there's a potential profit of at least 15%
-  if (potentialProfit < 15) return null;
+  // Lower threshold from 15% to 10% to show more often
+  if (potentialProfit < 10) return null;
   
   // Format the profit percentage
   const profitPercentFormatted = Math.round(potentialProfit);

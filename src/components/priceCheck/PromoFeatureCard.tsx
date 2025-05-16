@@ -31,13 +31,16 @@ const PromoFeatureCard: React.FC<PromoFeatureCardProps> = ({
                         variant === "arbitrage" ? "warning" : 
                         "default";
 
+  // Make arbitrage cards stand out more with a pulse animation effect
+  const animationClass = variant === "arbitrage" ? "animate-pulse" : "";
+
   // Determine background color based on variant                      
   const bgColor = variant === "premium" ? "bg-blue-50 border-blue-100" :
                   variant === "arbitrage" ? "bg-amber-50 border-amber-100" :
                   "bg-gray-50 border-gray-200";
 
   return (
-    <Card className={`mb-1 py-2 px-3 shadow-sm ${bgColor}`}>
+    <Card className={`mb-1 py-2 px-3 shadow-sm ${bgColor} ${animationClass}`}>
       <div className="flex items-start">
         <div className={`p-1.5 rounded-full mr-2 flex-shrink-0
           ${variant === "premium" ? "bg-blue-100 text-blue-600" : 

@@ -13,6 +13,7 @@ import PremiumOnlyLock from '../premium/PremiumOnlyLock';
 import PremiumVisualScanner from '../visualScanner/PremiumVisualScanner';
 import { ScanResult } from '../visualScanner/VisualScanner';
 import { toast } from '@/components/ui/sonner';
+import ArbitragePrompt from '../arbitrage/ArbitragePrompt';
 
 interface ArbitrageProps {
   isPremium: boolean;
@@ -84,6 +85,20 @@ const Arbitrage: React.FC<ArbitrageProps> = ({ isPremium }) => {
     }, 500);
   };
   
+  const handleScan = () => {
+    setIsVisualScannerOpen(true);
+  };
+
+  const handleExploreMovers = (categoryId: string) => {
+    toast.info(`Exploring movers for category ID: ${categoryId}`);
+    // In a real implementation, this would navigate to a page showing trending items in this category
+  };
+
+  const handleSetAlert = () => {
+    toast.info("Setting up deal alert");
+    // In a real implementation, this would open a form to set parameters for deal alerts
+  };
+  
   if (!isPremium) {
     return (
       <div className="space-y-4">
@@ -129,6 +144,15 @@ const Arbitrage: React.FC<ArbitrageProps> = ({ isPremium }) => {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Arbitrage Finder</h2>
       </div>
+      
+      {/* New ArbitragePrompt component */}
+      <ArbitragePrompt 
+        onScan={handleScan}
+        onSearch={() => setActiveTab('search')}
+        onExploreMovers={handleExploreMovers}
+        onSetAlert={handleSetAlert}
+        isPremium={isPremium}
+      />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 mb-4">
