@@ -29,11 +29,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
   
   return (
-    <div className="space-y-3 mt-3">
+    <div className="space-y-2 mt-1">
       <div className="grid grid-cols-2 gap-2">
         <Button 
           variant="default"
-          className="text-xs font-medium h-10 w-full relative flex items-center justify-center"
+          className="text-xs font-medium h-9 w-full relative flex items-center justify-center"
           onClick={onCheckPrice}
           disabled={loading || (searchesRemaining !== undefined && searchesRemaining <= 0)}
         >
@@ -57,7 +57,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         
         <Button 
           variant="secondary"
-          className="text-xs font-medium h-10 w-full flex items-center justify-center" 
+          className="text-xs font-medium h-9 w-full flex items-center justify-center" 
           onClick={openOnEbay}
         >
           <span>{itemId ? 'View on eBay' : 'Search on eBay'}</span>
@@ -68,7 +68,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       <AffiliateButton 
         productName={productTitle}
         buttonText="Buy New on Amazon"
-        className="bg-blue-600 hover:bg-blue-700 w-full text-xs font-medium h-10 flex items-center justify-center"
+        className="bg-blue-600 hover:bg-blue-700 w-full text-xs font-medium h-9 flex items-center justify-center"
       />
     </div>
   );
