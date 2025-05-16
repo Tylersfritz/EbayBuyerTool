@@ -11,6 +11,9 @@ import RequireAuth from './components/auth/RequireAuth.tsx'
 import MainLayout from './components/layouts/MainLayout.tsx'
 import './index.css'
 
+// Define the Vercel backend URL 
+const VERCEL_API_URL = 'https://ebay-buyer-tool-zp52.vercel.app';
+
 // Create a more comprehensive router with proper 404 handling
 const router = createBrowserRouter([
   {
@@ -44,10 +47,10 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
-      // Redirect any /api/* paths to the actual API endpoints
+      // Redirect any /api/* paths to the actual API endpoints on Vercel
       {
         path: '/api/*',
-        element: <Navigate to="/" replace />,
+        element: <Navigate to={`${VERCEL_API_URL}/api/*`} replace />,
       },
       // Catch-all route for 404 errors
       {

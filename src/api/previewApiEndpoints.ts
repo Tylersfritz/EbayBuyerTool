@@ -6,6 +6,7 @@
 
 import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
 import { mockPriceCheckApi } from './mockApiEndpoints';
+import { getFullApiUrl } from './apiConfig';
 
 /**
  * Handles price-check API requests in the preview environment
@@ -15,8 +16,8 @@ export async function handlePriceCheckRequest(params: PriceCheckParams): Promise
   console.log('Preview price-check API called with:', params);
   
   try {
-    // First try to call the actual serverless function for real data
-    const apiUrl = 'https://ebay-buyer-tool-3rowffqph-tyler-fritzs-projects.vercel.app/api/price-check';
+    // Use the absolute URL to call the actual serverless function
+    const apiUrl = getFullApiUrl('/api/price-check');
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -61,7 +62,7 @@ export function setupPreviewApiRoutes() {
         ? input.url 
         : input.toString();
     
-    // Check if this is a call to our API endpoints
+    // Check if this is a call to our API endpoints and update to use absolute URL if needed
     if (urlString.includes('/api/price-check')) {
       console.log('Intercepted API call in preview environment:', urlString);
       

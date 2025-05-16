@@ -1,10 +1,10 @@
-
 // src/api/priceApiService.ts
 // Service to interact with the price-check API endpoint for DealHavenAI
 
 import { PriceCheckResponse, ListingInfo } from '@/components/priceCheck/types/priceCheckTypes';
 import { toast } from "@/components/ui/sonner";
 import { mockPriceCheckApi } from './priceApiClient';
+import { getFullApiUrl } from './apiConfig';
 
 // Type definition for the parameters sent to the price-check endpoint
 export interface PriceCheckParams {
@@ -50,11 +50,8 @@ export async function getPriceCheck(params: PriceCheckParams): Promise<PriceChec
       marketInsightsApi: API_CONFIG.ebay.marketInsightsApiEnvironment
     };
     
-    // For preview/web environment, use the special preview endpoint
-    const isExtension = !!window.chrome?.runtime || !!window.browser?.runtime;
-    const apiBaseUrl = isExtension 
-      ? 'https://ebay-buyer-tool-3rowffqph-tyler-fritzs-projects.vercel.app'
-      : '/api'; // Use relative path for preview environment
+    // Always use the absolute API URL
+    const apiUrl = getFullApiUrl('/api/price-check');
       
     // Enhance logging to track item specifics being used
     if (API_CONFIG.debugLogging) {
@@ -62,7 +59,7 @@ export async function getPriceCheck(params: PriceCheckParams): Promise<PriceChec
       console.log('API environments:', apiConfig);
     }
       
-    const response = await fetch(`${apiBaseUrl}/api/price-check`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
