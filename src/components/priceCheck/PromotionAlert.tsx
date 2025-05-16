@@ -28,11 +28,18 @@ const PromotionAlert: React.FC<PromotionAlertProps> = ({
   React.useEffect(() => {
     const loadUsageData = async () => {
       if (!isPremium) {
-        const count = await getPriceCheckUsageCount();
-        setUsageCount(count);
-        
-        const hasReachedLimit = await hasReachedPriceCheckLimit();
-        setLimitReached(hasReachedLimit);
+        try {
+          const count = await getPriceCheckUsageCount();
+          setUsageCount(count);
+          
+          const hasReachedLimit = await hasReachedPriceCheckLimit();
+          setLimitReached(hasReachedLimit);
+        } catch (error) {
+          console.error('Error loading usage data:', error);
+          // Set default values if there's an error
+          setUsageCount(0);
+          setLimitReached(false);
+        }
       }
     };
     
@@ -77,7 +84,7 @@ const PromotionAlert: React.FC<PromotionAlertProps> = ({
           </AlertDescription>
         </div>
         {limitReached && (
-          <Badge variant="premium" className="text-[0.6rem] h-4">UPGRADE</Badge>
+          <Badge variant="premium" className="ml-1 text-[0.6rem] h-4">UPGRADE</Badge>
         )}
       </div>
     </Alert>

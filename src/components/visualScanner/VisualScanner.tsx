@@ -20,6 +20,7 @@ export interface ScanResult {
   model?: string;
   imageUrl?: string;
   confidence: number;
+  itemId?: string;  // Added itemId to match expected interface
 }
 
 const VisualScanner: React.FC<VisualScannerProps> = ({ onScanComplete, onCancel, isPremium }) => {
@@ -124,7 +125,8 @@ const VisualScanner: React.FC<VisualScannerProps> = ({ onScanComplete, onCancel,
         model: "Model XYZ-123",
         description: "A product detected from the image scan",
         imageUrl: imageData,
-        confidence: 0.85
+        confidence: 0.85,
+        itemId: "mock-item-123"  // Added mock itemId
       };
       
       onScanComplete(result);

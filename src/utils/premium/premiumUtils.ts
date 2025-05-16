@@ -3,7 +3,7 @@
  * Utility functions for premium status
  */
 import { supabase } from "@/integrations/supabase/client";
-import { getBrowserAPI } from '../browserUtils';
+import { getBrowserAPI, isExtensionEnvironment } from '../browserUtils';
 
 // Define types for storage data
 interface PremiumStorage {
@@ -57,9 +57,9 @@ export async function checkPremiumStatus(): Promise<boolean> {
   }
   
   // For development without auth, fall back to localStorage/browser.storage
-  if (browserAPI.isExtensionEnvironment()) {
+  if (isExtensionEnvironment()) {
     // Fixed: Remove type arguments from storage.get call
-    const result = await browserAPI.storage.get('dealHavenAIPremium');
+    const result = await browserAPI.storage.local.get('dealHavenAIPremium');
     return (result as PremiumStorage)?.dealHavenAIPremium === 'active';
   } else {
     // For development without browser API
@@ -71,7 +71,6 @@ export async function checkPremiumStatus(): Promise<boolean> {
  * Track Visual Scanner usage
  */
 export async function trackVisualScannerUsage(): Promise<boolean> {
-  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -123,11 +122,11 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_visualScans_${monthKey}`;
     
-    if (browserAPI.isExtensionEnvironment()) {
+    if (isExtensionEnvironment()) {
+      const browserAPI = getBrowserAPI();
       // Get current monthly usage count
-      // Fixed: Remove type arguments from storage.get call
-      const result = await browserAPI.storage.get(storageKey);
-      const currentValue = (result as unknown as number) || 0;
+      const result = await browserAPI.storage.local.get(storageKey);
+      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
       
       // Check if monthly limit reached
       if (currentValue >= FREE_TIER_VISUAL_SCAN_LIMIT) {
@@ -136,8 +135,7 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
       }
       
       // Increment usage count
-      const value = currentValue + 1;
-      await browserAPI.storage.set({[storageKey]: value});
+      await browserAPI.storage.local.set({[storageKey]: currentValue + 1});
     } else {
       // For development without browser API, use localStorage with monthly limit
       const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
@@ -162,7 +160,6 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
  * Track Price Check usage
  */
 export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number): Promise<UsageResponse> {
-  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -227,10 +224,11 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
     
-    if (browserAPI.isExtensionEnvironment()) {
+    if (isExtensionEnvironment()) {
+      const browserAPI = getBrowserAPI();
       // Get current monthly usage count
-      const result = await browserAPI.storage.get(storageKey);
-      const currentValue = (result as unknown as number) || 0;
+      const result = await browserAPI.storage.local.get(storageKey);
+      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
       
       // Check if monthly limit reached
       if (currentValue >= FREE_TIER_PRICE_CHECK_LIMIT) {
@@ -244,7 +242,7 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
       
       // Increment usage count
       const value = currentValue + 1;
-      await browserAPI.storage.set({[storageKey]: value});
+      await browserAPI.storage.local.set({[storageKey]: value});
       return { 
         success: true,
         count: value
@@ -282,7 +280,6 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
  * Check if user has reached price check limit
  */
 export async function hasReachedPriceCheckLimit(): Promise<boolean> {
-  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -310,9 +307,10 @@ export async function hasReachedPriceCheckLimit(): Promise<boolean> {
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
     
-    if (browserAPI.isExtensionEnvironment()) {
-      const result = await browserAPI.storage.get(storageKey);
-      const currentValue = (result as unknown as number) || 0;
+    if (isExtensionEnvironment()) {
+      const browserAPI = getBrowserAPI();
+      const result = await browserAPI.storage.local.get(storageKey);
+      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
       return currentValue >= FREE_TIER_PRICE_CHECK_LIMIT;
     } else {
       const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
@@ -328,7 +326,6 @@ export async function hasReachedPriceCheckLimit(): Promise<boolean> {
  * Get monthly visual scanner usage count
  */
 export async function getVisualScannerUsageCount(): Promise<number> {
-  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -355,13 +352,14 @@ export async function getVisualScannerUsageCount(): Promise<number> {
     }
     
     // For development, get count from localStorage
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const storageKey = `dealHavenAI_visualScans_${today}`;
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const storageKey = `dealHavenAI_visualScans_${monthKey}`;
     
-    if (browserAPI.isExtensionEnvironment()) {
-      // Fixed: Remove type arguments from storage.get call
-      const result = await browserAPI.storage.get(storageKey);
-      return (result as unknown as number) || 0;
+    if (isExtensionEnvironment()) {
+      const browserAPI = getBrowserAPI();
+      const result = await browserAPI.storage.local.get(storageKey);
+      return (result as unknown as Record<string, number>)[storageKey] || 0;
     } else {
       return parseInt(localStorage.getItem(storageKey) || '0', 10);
     }
@@ -375,7 +373,6 @@ export async function getVisualScannerUsageCount(): Promise<number> {
  * Get monthly price check usage count
  */
 export async function getPriceCheckUsageCount(): Promise<number> {
-  const browserAPI = getBrowserAPI();
   try {
     const { data: session } = await supabase.auth.getSession();
     
@@ -403,9 +400,10 @@ export async function getPriceCheckUsageCount(): Promise<number> {
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
     
-    if (browserAPI.isExtensionEnvironment()) {
-      const result = await browserAPI.storage.get(storageKey);
-      return (result as unknown as number) || 0;
+    if (isExtensionEnvironment()) {
+      const browserAPI = getBrowserAPI();
+      const result = await browserAPI.storage.local.get(storageKey);
+      return (result as unknown as Record<string, number>)[storageKey] || 0;
     } else {
       return parseInt(localStorage.getItem(storageKey) || '0', 10);
     }
