@@ -14,14 +14,18 @@ console.log('==================================');
 const projectDir = path.resolve('.');
 console.log(`Working directory: ${projectDir}`);
 
-// 1. Run the fix-extension-files script
+// 1. Run the fix-extension-files script if it exists
 console.log('\n1️⃣ Fixing extension files...');
-try {
-  execSync('node public/fix-extension-files.js', { stdio: 'inherit' });
-  console.log('✅ Extension files fixed successfully');
-} catch (error) {
-  console.error('❌ Error fixing extension files:', error.message);
-  console.error('Continuing with the build process anyway...');
+if (fs.existsSync(path.join(projectDir, 'public', 'fix-extension-files.js'))) {
+  try {
+    execSync('node public/fix-extension-files.js', { stdio: 'inherit' });
+    console.log('✅ Extension files fixed successfully');
+  } catch (error) {
+    console.error('❌ Error fixing extension files:', error.message);
+    console.error('Continuing with the build process anyway...');
+  }
+} else {
+  console.log('⚠️ fix-extension-files.js not found, skipping this step');
 }
 
 // 2. Check for merge conflicts in index.html
@@ -174,4 +178,3 @@ console.log('1. Go to chrome://extensions/');
 console.log('2. Enable "Developer mode"');
 console.log('3. Click "Load unpacked" and select the dist folder:');
 console.log(`   ${path.resolve(distDir)}`);
-
