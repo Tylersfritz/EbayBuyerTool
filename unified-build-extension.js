@@ -13,7 +13,7 @@ const isESM = typeof require === 'undefined';
 if (isESM) {
   console.log('📦 Running in ESM mode');
   
-  import('./build-extension.cjs')
+  import('./public/run-build-extension.js')
     .then(() => {
       console.log('✅ Build completed successfully via ESM import');
     })
@@ -27,7 +27,7 @@ else {
   console.log('📦 Running in CommonJS mode');
   
   try {
-    require('./build-extension.cjs');
+    require('./public/run-build-extension.js');
     console.log('✅ Build completed successfully via CommonJS require');
   } catch (error) {
     console.error('❌ Build failed:', error.message);

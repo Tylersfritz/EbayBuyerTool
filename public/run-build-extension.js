@@ -15,6 +15,21 @@ const fs = require('fs');
 console.log('🚀 Running DealHaven Extension Build Sequence...');
 console.log('===========================================');
 
+// First make sure dist directory is clean
+console.log('🧹 Cleaning dist directory...');
+if (fs.existsSync(path.join(__dirname, '..', 'dist'))) {
+  try {
+    if (process.platform === "win32") {
+      execSync(`rmdir /s /q "${path.join(__dirname, '..', 'dist')}"`, { stdio: 'ignore' });
+    } else {
+      execSync(`rm -rf "${path.join(__dirname, '..', 'dist')}"`, { stdio: 'ignore' });
+    }
+    console.log('✅ Removed old dist directory');
+  } catch (error) {
+    console.error(`❌ Error cleaning dist directory: ${error.message}`);
+  }
+}
+
 // Helper to run a command with proper error handling
 function runStep(step, command, errorMessage) {
   console.log(`\n📋 Step ${step}: ${command}`);
@@ -66,9 +81,27 @@ if (!runStep(5, `node ${path.join(__dirname, 'verify-build.js')}`, 'Extension va
   process.exit(1);
 }
 
+// Verify that ArbitragePrompt.tsx and VisualScanner.tsx components are included
+console.log('\n🔍 Checking for critical components...');
+const componentsToCheck = [
+  { componentName: 'ArbitragePrompt', path: '../src/components/arbitrage/ArbitragePrompt.tsx' },
+  { componentName: 'VisualScanner', path: '../src/components/visualScanner/VisualScanner.tsx' }
+];
+
+componentsToCheck.forEach(component => {
+  const componentPath = path.join(__dirname, component.path);
+  if (fs.existsSync(componentPath)) {
+    console.log(`✅ Found ${component.componentName} component at ${componentPath}`);
+  } else {
+    console.error(`❌ Could not find ${component.componentName} component at ${componentPath}`);
+  }
+});
+
 console.log('\n🎉 Extension build completed successfully!');
 console.log('\nNext steps:');
 console.log('1. Open Chrome and navigate to chrome://extensions/');
 console.log('2. Enable "Developer mode" in the top right corner');
 console.log('3. Click "Load unpacked" and select the "dist" directory');
 console.log(`   (${path.resolve(distDir)})`);
+console.log('\nTo package the extension for Chrome Web Store submission:');
+console.log('   zip -r extension.zip dist');

@@ -16,7 +16,13 @@ To build the extension, run:
 node unified-build.js
 ```
 
-This script will:
+If you encounter any issues with the main build script, try the direct extension build:
+
+```bash
+node unified-build-extension.js
+```
+
+These scripts will:
 
 1. Run the Vite build process
 2. Run the extension build process to copy necessary files to the dist directory
@@ -27,8 +33,9 @@ If you encounter any issues:
 
 1. Clear the dist directory: `rm -rf dist`
 2. Clear npm cache: `npm cache clean --force`
-3. Reinstall dependencies: `npm ci`
-4. Try the build again: `node unified-build.js`
+3. Clear Chrome extension cache: Navigate to chrome://extensions, toggle Developer Mode, and click "Update"
+4. Reinstall dependencies: `npm ci`
+5. Try the build again: `node unified-build.js`
 
 ## Loading the Extension
 
