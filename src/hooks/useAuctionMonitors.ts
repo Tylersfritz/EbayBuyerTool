@@ -16,6 +16,7 @@ export function useAuctionMonitors() {
   const queryClient = useQueryClient();
   const { user, isPremium } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingComparables, setIsLoadingComparables] = useState(false);
 
   // Fetch all monitors for the current user
   const { 
@@ -100,10 +101,12 @@ export function useAuctionMonitors() {
   // Find comparable items for market analysis
   const findComparableItems = async (itemId: string, title: string, category?: string) => {
     try {
+      setIsLoadingComparables(true);
       // In a real implementation, this would call an API endpoint
       // For now we'll return mock data
       await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
       
+      setIsLoadingComparables(false);
       return {
         marketRate: 95.50,
         itemCount: 12,
@@ -116,6 +119,7 @@ export function useAuctionMonitors() {
         ]
       };
     } catch (error) {
+      setIsLoadingComparables(false);
       console.error('Error finding comparable items:', error);
       return null;
     }
@@ -152,6 +156,7 @@ export function useAuctionMonitors() {
     deleteMonitor: deleteMonitorMutation.mutate,
     isDeletingMonitor: deleteMonitorMutation.isPending,
     findComparableItems,
+    isLoadingComparables,
     calculateTimeRemaining
   };
 }
