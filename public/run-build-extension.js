@@ -55,7 +55,7 @@ if (!runStep(3, `node ${path.join(__dirname, 'build-extension.js')}`, 'Failed to
 
 // Step 4: Validate the extension build
 console.log('\n🔍 Step 4: Validating extension build...');
-if (!runStep(4, `node ${path.join(__dirname, 'extension-validation.js')}`, 'Extension validation failed')) {
+if (!runStep(4, `node ${path.join(__dirname, 'verify-build.js')}`, 'Extension validation failed')) {
   process.exit(1);
 }
 

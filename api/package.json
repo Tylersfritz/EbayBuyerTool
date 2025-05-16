@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "API for the eBay Buyer Tool",
   "main": "index.js",
+  "scripts": {
+    "build": "node ../public/run-build-extension.js",
+    "fix-manifest": "node ../public/fix-manifest.js"
+  },
   "dependencies": {
     "node-fetch": "^2.7.0",
     "node-cache": "^5.1.2"
