@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import { useAuctionMonitors } from '@/hooks/useAuctionMonitors';
 import { getCurrentListing } from '@/utils/extensionUtils';
 import { getAdapterForUrl, getSupportedMarketplaces, MarketplaceListingData } from '@/utils/marketplaceAdapters';
@@ -17,7 +17,6 @@ import { Card as ComparableCard, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const AuctionAssistForm: React.FC = () => {
-  const { toast } = useToast();
   const { createMonitor, isCreatingMonitor, findComparableItems, isLoadingComparables } = useAuctionMonitors();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +25,7 @@ const AuctionAssistForm: React.FC = () => {
   const [notificationTime, setNotificationTime] = useState<number>(300); // Default 5 minutes (300 seconds) before end
   const [selectedMarketplace, setSelectedMarketplace] = useState<string>('');
   const [comparables, setComparables] = useState<any>(null);
-  const supportedMarketplaces = getSupportedMarketplaces();
-
+  
   useEffect(() => {
     const loadCurrentListing = async () => {
       try {
@@ -53,7 +51,7 @@ const AuctionAssistForm: React.FC = () => {
           return;
         }
         
-        // Extract normalized listing data
+        // Extract normalized listing data - pass the currentListing object directly
         const data = adapter.extractListingData(currentListing);
         setListingData(data);
         setSelectedMarketplace(data.marketplace);
@@ -92,20 +90,12 @@ const AuctionAssistForm: React.FC = () => {
 
   const handleCreateMonitor = () => {
     if (!listingData || !listingData.auctionEndTime) {
-      toast({
-        title: "Error",
-        description: "Cannot monitor auction: No valid auction detected or missing end time.",
-        variant: "destructive"
-      });
+      toast.error("Cannot monitor auction: No valid auction detected or missing end time.");
       return;
     }
     
     if (targetPrice <= 0) {
-      toast({
-        title: "Invalid Target Price",
-        description: "Please set a valid target price.",
-        variant: "destructive" 
-      });
+      toast.error("Please set a valid target price.");
       return;
     }
     

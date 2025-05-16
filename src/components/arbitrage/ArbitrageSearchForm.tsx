@@ -7,9 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArbitrageSearchParams } from '@/utils/marketplaceAdapters/types';
 import { getSupportedMarketplaces, getArbitrageTargets } from '@/utils/marketplaceAdapters';
 import { SearchIcon, Loader2 } from 'lucide-react';
+
+interface ArbitrageSearchParams {
+  sourceMarketplace: string;
+  targetMarketplace: string;
+  query: string;
+  minProfitMargin: number;
+  maxPrice: number;
+  includeUsed: boolean;
+  includeFees: boolean;
+}
 
 interface ArbitrageSearchFormProps {
   onSearch: (params: ArbitrageSearchParams) => Promise<void>;

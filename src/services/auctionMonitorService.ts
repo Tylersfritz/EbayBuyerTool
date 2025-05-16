@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuctionMonitorRequest, AuctionMonitorData } from '@/utils/marketplaceAdapters';
 import { useAuth } from '@/context/AuthContext';
 
-// Create a new auction monitor
+// Create a new auction monitor - uses auction_snipes table for now until database schema is updated
 export async function createAuctionMonitor(monitorRequest: AuctionMonitorRequest): Promise<{ data: AuctionMonitorData | null; error: Error | null }> {
   try {
     const { data: session } = await supabase.auth.getSession();
@@ -12,7 +12,7 @@ export async function createAuctionMonitor(monitorRequest: AuctionMonitorRequest
     }
 
     const { data, error } = await supabase
-      .from('auction_monitors')
+      .from('auction_snipes')
       .insert({
         user_id: session.session.user.id,
         marketplace: monitorRequest.marketplace,
@@ -20,9 +20,10 @@ export async function createAuctionMonitor(monitorRequest: AuctionMonitorRequest
         item_url: monitorRequest.itemUrl,
         item_title: monitorRequest.itemTitle,
         current_price: monitorRequest.currentPrice,
-        target_price: monitorRequest.targetPrice,
-        notification_time: monitorRequest.notificationTime,
+        max_bid_amount: monitorRequest.targetPrice, // Reuse existing field for target price
+        snipe_time: monitorRequest.notificationTime, // Reuse existing field for notification time
         auction_end_time: monitorRequest.auctionEndTime.toISOString(),
+        status: 'pending',
         marketplace_metadata: monitorRequest.marketplaceMetadata || {}
       })
       .select('*')
@@ -43,7 +44,7 @@ export async function createAuctionMonitor(monitorRequest: AuctionMonitorRequest
   }
 }
 
-// Get all auction monitors for the current user
+// Get all auction monitors for the current user - uses auction_snipes table for now
 export async function getUserAuctionMonitors(): Promise<{ data: AuctionMonitorData[]; error: Error | null }> {
   try {
     const { data: session } = await supabase.auth.getSession();
@@ -52,7 +53,7 @@ export async function getUserAuctionMonitors(): Promise<{ data: AuctionMonitorDa
     }
 
     const { data, error } = await supabase
-      .from('auction_monitors')
+      .from('auction_snipes')
       .select('*')
       .eq('user_id', session.session.user.id)
       .order('auction_end_time', { ascending: true });
@@ -72,16 +73,26 @@ export async function getUserAuctionMonitors(): Promise<{ data: AuctionMonitorDa
   }
 }
 
-// Update an auction monitor
+// Update an auction monitor - uses auction_snipes table for now
 export async function updateAuctionMonitor(id: string, updates: Partial<AuctionMonitorRequest>): Promise<{ data: AuctionMonitorData | null; error: Error | null }> {
   try {
+    const updateData: any = {};
+    
+    if (updates.targetPrice !== undefined) {
+      updateData.max_bid_amount = updates.targetPrice;
+    }
+    
+    if (updates.notificationTime !== undefined) {
+      updateData.snipe_time = updates.notificationTime;
+    }
+    
+    if (updates.marketplaceMetadata !== undefined) {
+      updateData.marketplace_metadata = updates.marketplaceMetadata;
+    }
+    
     const { data, error } = await supabase
-      .from('auction_monitors')
-      .update({
-        target_price: updates.targetPrice,
-        notification_time: updates.notificationTime,
-        marketplace_metadata: updates.marketplaceMetadata
-      })
+      .from('auction_snipes')
+      .update(updateData)
       .eq('id', id)
       .select('*')
       .single();
@@ -101,11 +112,11 @@ export async function updateAuctionMonitor(id: string, updates: Partial<AuctionM
   }
 }
 
-// Cancel an auction monitor
+// Cancel an auction monitor - uses auction_snipes table for now
 export async function cancelAuctionMonitor(id: string): Promise<{ success: boolean; error: Error | null }> {
   try {
     const { error } = await supabase
-      .from('auction_monitors')
+      .from('auction_snipes')
       .update({ status: 'cancelled' })
       .eq('id', id);
 
@@ -121,11 +132,11 @@ export async function cancelAuctionMonitor(id: string): Promise<{ success: boole
   }
 }
 
-// Delete an auction monitor
+// Delete an auction monitor - uses auction_snipes table for now
 export async function deleteAuctionMonitor(id: string): Promise<{ success: boolean; error: Error | null }> {
   try {
     const { error } = await supabase
-      .from('auction_monitors')
+      .from('auction_snipes')
       .delete()
       .eq('id', id);
 
@@ -150,15 +161,15 @@ function formatAuctionMonitorData(data: any): AuctionMonitorData {
     itemUrl: data.item_url,
     itemTitle: data.item_title,
     currentPrice: data.current_price,
-    targetPrice: data.target_price,
-    notificationTime: data.notification_time,
+    targetPrice: data.max_bid_amount, // Map from max_bid_amount
+    notificationTime: data.snipe_time, // Map from snipe_time
     status: data.status,
     createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
+    updatedAt: new Date(data.updated_at || data.created_at),
     auctionEndTime: new Date(data.auction_end_time),
     marketplace: data.marketplace,
     marketplaceMetadata: data.marketplace_metadata,
-    marketRate: data.market_rate
+    marketRate: data.marketplace_metadata?.marketRate
   };
 }
 

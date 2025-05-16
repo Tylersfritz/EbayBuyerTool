@@ -1,3 +1,4 @@
+
 // Marketplace Adapters and Types
 
 // Generic interface for marketplace listing data
@@ -21,7 +22,15 @@ export interface MarketplaceListingData {
 export abstract class MarketplaceAdapter {
   abstract marketplace: string;
 
-  abstract extractListingData(document: Document): MarketplaceListingData;
+  extractListingData(document: Document | any): MarketplaceListingData {
+    // Base implementation - should be overridden by specific adapters
+    return {
+      marketplace: this.marketplace,
+      itemId: '',
+      title: '',
+      itemUrl: ''
+    };
+  }
 
   static getAdapter(url: string): MarketplaceAdapter | null {
     if (url.includes('ebay.com')) {
@@ -37,15 +46,15 @@ export abstract class MarketplaceAdapter {
 class EbayAdapter extends MarketplaceAdapter {
   marketplace = 'eBay';
 
-  extractListingData(document: any): MarketplaceListingData {
+  extractListingData(document: Document | any): MarketplaceListingData {
     const title = document.title || '';
-    const itemId = document.querySelector('[itemprop="productID"]')?.content || '';
+    const itemId = document.querySelector?.('[itemprop="productID"]')?.content || '';
     const itemUrl = document.URL || '';
-    const currentPriceText = document.querySelector('[itemprop="price"]')?.content || '';
-    const currentPrice = parseFloat(currentPriceText);
-    const seller = document.querySelector('[itemprop="seller"]')?.textContent || '';
-    const isAuction = document.querySelector('#bidBtn_btn') !== null;
-    const auctionEndTimeText = document.querySelector('#vi-cdown_timeLeft')?.textContent || '';
+    const currentPriceText = document.querySelector?.('[itemprop="price"]')?.content || '';
+    const currentPrice = parseFloat(currentPriceText) || 0;
+    const seller = document.querySelector?.('[itemprop="seller"]')?.textContent || '';
+    const isAuction = document.querySelector?.('#bidBtn_btn') !== null;
+    const auctionEndTimeText = document.querySelector?.('#vi-cdown_timeLeft')?.textContent || '';
     const auctionEndTime = this.parseEbayAuctionEndTime(auctionEndTimeText);
 
     return {
@@ -82,13 +91,13 @@ class EbayAdapter extends MarketplaceAdapter {
 class MercariAdapter extends MarketplaceAdapter {
   marketplace = 'Mercari';
 
-  extractListingData(document: any): MarketplaceListingData {
+  extractListingData(document: Document | any): MarketplaceListingData {
     const title = document.title || '';
-    const itemId = document.querySelector('meta[name="item_id"]')?.content || '';
+    const itemId = document.querySelector?.('meta[name="item_id"]')?.content || '';
     const itemUrl = document.URL || '';
-    const currentPriceText = document.querySelector('.item-price')?.textContent || '';
-    const currentPrice = parseFloat(currentPriceText.replace(/[^0-9.]/g, '')); // Remove non-numeric chars
-    const seller = document.querySelector('.seller-name')?.textContent || '';
+    const currentPriceText = document.querySelector?.('.item-price')?.textContent || '';
+    const currentPrice = parseFloat(currentPriceText.replace(/[^0-9.]/g, '')) || 0; // Remove non-numeric chars
+    const seller = document.querySelector?.('.seller-name')?.textContent || '';
 
     return {
       marketplace: this.marketplace,
@@ -112,8 +121,21 @@ export function getAdapterForUrl(url: string): MarketplaceAdapter | null {
 }
 
 // Function to get supported marketplaces
-export function getSupportedMarketplaces(): string[] {
-  return ['eBay', 'Mercari'];
+export function getSupportedMarketplaces(): Array<{ name: string; icon?: string }> {
+  return [
+    { name: 'eBay', icon: 'shopping-bag' },
+    { name: 'Mercari', icon: 'shopping-cart' }
+  ];
+}
+
+// Added function to get arbitrage targets
+export function getArbitrageTargets(sourceMarketplace: string): string[] {
+  if (sourceMarketplace.toLowerCase() === 'ebay') {
+    return ['mercari', 'amazon'];
+  } else if (sourceMarketplace.toLowerCase() === 'mercari') {
+    return ['ebay', 'amazon'];
+  }
+  return ['ebay', 'mercari'];
 }
 
 // Auction Monitor types that replace the previous Snipe types
