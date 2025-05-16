@@ -7,6 +7,11 @@ export const shadcnPlugin = plugin(
       ':root': {
         '--radius': '0.5rem',
       },
+      // Add base font styles
+      'html': {
+        fontFamily: 'Inter, sans-serif',
+        fontDisplay: 'swap',
+      },
     });
     
     addUtilities({
@@ -15,6 +20,10 @@ export const shadcnPlugin = plugin(
       },
       '.variant-premium': {
         '@apply bg-gradient-to-r from-blue-600 to-violet-500 text-white': {},
+      },
+      // Add specific font utilities
+      '.font-display': {
+        fontFamily: '"Playfair Display", serif',
       },
     });
     

@@ -18,6 +18,10 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Playfair Display', 'serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -27,6 +31,7 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          600: "hsl(172, 92%, 28%)", // Slightly darker shade for gradient
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
