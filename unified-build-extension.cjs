@@ -13,6 +13,27 @@ const { execSync } = require('child_process');
 console.log('🚀 DealHavenAI Extension Build Script (CJS version)');
 console.log('================================================');
 
+// Clean build environment
+console.log('\n🧹 Cleaning build environment...');
+try {
+  console.log('Clearing npm cache...');
+  execSync('npm cache clean --force', { stdio: 'inherit' });
+  console.log('✅ Npm cache cleared');
+  
+  console.log('Removing dist directory if it exists...');
+  if (fs.existsSync('./dist')) {
+    if (process.platform === "win32") {
+      execSync('rmdir /s /q dist', { stdio: 'inherit' });
+    } else {
+      execSync('rm -rf dist', { stdio: 'inherit' });
+    }
+  }
+  console.log('✅ Dist directory removed');
+} catch (error) {
+  console.warn(`⚠️ Clean environment warning: ${error.message}`);
+  console.log('Continuing with build process...');
+}
+
 // Define critical paths
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');

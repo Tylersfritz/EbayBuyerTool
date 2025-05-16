@@ -17,6 +17,13 @@ export default defineConfig(({ mode }) => {
     console.log('✅ Public directory exists');
   }
 
+  // Check if lovable.dev directory exists for aliases
+  const lovableDevDir = path.join(process.cwd(), 'lovable.dev');
+  const hasLovableDev = fs.existsSync(lovableDevDir);
+  if (hasLovableDev) {
+    console.log('✅ lovable.dev directory found - will create alias');
+  }
+
   // Handle browser polyfill copy without modifying package.json
   const browserPolyfillPath = path.resolve(
     './node_modules/webextension-polyfill/dist/browser-polyfill.min.js'
@@ -37,6 +44,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: './',
+    // Explicitly set public directory
+    publicDir: 'public',
     plugins: [
       react(),
       mode === 'development' && componentTagger(),
@@ -211,7 +220,9 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src')
+        '@': path.resolve(__dirname, './src'),
+        // Add alias for lovable.dev/src if it exists
+        ...(hasLovableDev ? { '@lovable': path.resolve(__dirname, './lovable.dev/src') } : {})
       }
     },
     server: {
@@ -230,7 +241,16 @@ export default defineConfig(({ mode }) => {
         output: {
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]'
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          // Add manualChunks configuration to ensure critical components are included
+          manualChunks: {
+            arbitragePrompt: ['./src/components/arbitrage/ArbitragePrompt.tsx'],
+            visualScanner: ['./src/components/visualScanner/VisualScanner.tsx'],
+            // Group common UI components
+            ui: ['./src/components/ui/button.tsx', './src/components/ui/card.tsx'],
+            // Group core functionality
+            core: ['./src/App.tsx']
+          }
         },
         external: ['webextension-polyfill']
       },

@@ -11,6 +11,9 @@ interface AppProps {
 }
 
 function App({ mode }: AppProps) {
+  // Log to confirm critical components are being imported
+  console.log('Loading App with critical components: ArbitragePrompt, VisualScanner');
+  
   return (
     <div className="App">
       <ExtensionPopupWrapper />
