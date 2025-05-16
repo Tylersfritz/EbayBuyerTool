@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { DollarSign, TagIcon } from "lucide-react";
+import { DollarSign, TagIcon, Gavel } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface PricingInfoProps {
