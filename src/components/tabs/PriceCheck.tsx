@@ -193,10 +193,11 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }
         isOpen={isVisualScannerOpen}
       />
       
-      {/* Current Listing Card */}
+      {/* Current Listing Card - Updated with arbitrage click handler */}
       <CurrentListingCard
         listingInfo={listingInfo}
         loadingListingInfo={loadingListingInfo}
+        onArbitrageClick={handleNavigateToArbitrage}
       />
       
       {/* Premium Feature: Price History Chart with reduced margin */}

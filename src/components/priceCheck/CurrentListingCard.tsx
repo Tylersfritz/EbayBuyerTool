@@ -1,5 +1,4 @@
 
-// src/components/priceCheck/CurrentListingCard.tsx
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { ListingInfo } from '@/components/priceCheck/types/priceCheckTypes';
@@ -13,11 +12,13 @@ import LoadingSkeleton from './listingCard/LoadingSkeleton';
 interface CurrentListingCardProps {
   listingInfo: ListingInfo;
   loadingListingInfo: boolean;
+  onArbitrageClick?: () => void; // New prop for handling arbitrage button clicks
 }
 
 const CurrentListingCard: React.FC<CurrentListingCardProps> = ({ 
   listingInfo, 
-  loadingListingInfo 
+  loadingListingInfo,
+  onArbitrageClick
 }) => {
   const [marketRate, setMarketRate] = useState<number | null>(null);
 
@@ -95,6 +96,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
           originalPrice={originalPrice}
           currentPrice={currentPrice}
           marketRate={marketRate}
+          onArbitrageClick={onArbitrageClick}
         />
       </CardContent>
     </Card>
