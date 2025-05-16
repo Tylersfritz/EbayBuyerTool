@@ -84,6 +84,11 @@ const ExtensionPopup: React.FC = () => {
   
   // Only show dev tools in development mode
   const isDevelopmentMode = import.meta.env.DEV;
+
+  // Handle tab change from promos
+  const handleTabChange = (tabName: string) => {
+    setActiveTab(tabName);
+  };
   
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -230,7 +235,7 @@ const ExtensionPopup: React.FC = () => {
         </div>
         
         <TabsContent value="priceCheck" className="flex-1 px-4 py-3 overflow-y-auto m-0 data-[state=active]:animate-[fade-in_0.2s_ease-out]">
-          <PriceCheck isPremium={isPremium} />
+          <PriceCheck isPremium={isPremium} onTabChange={handleTabChange} />
         </TabsContent>
         
         <TabsContent value="negotiate" className="flex-1 px-4 py-3 overflow-y-auto m-0 data-[state=active]:animate-[fade-in_0.2s_ease-out]">

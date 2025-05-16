@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CurrentListingCard from "@/components/priceCheck/CurrentListingCard";
 import PriceAnalysisCard from "@/components/priceCheck/PriceAnalysisCard";
@@ -6,6 +7,8 @@ import PriceHistoryChart from "@/components/priceCheck/PriceHistoryChart";
 import ConditionValueAnalysis from "@/components/priceCheck/ConditionValueAnalysis";
 import ActionButtons from "@/components/priceCheck/ActionButtons";
 import EnhancedAffiliateButton from "@/components/priceCheck/EnhancedAffiliateButton";
+import BidEdgePromo from "@/components/priceCheck/BidEdgePromo";
+import ArbitrageAlertPromo from "@/components/priceCheck/ArbitrageAlertPromo";
 import { usePriceCheck } from "@/components/priceCheck/usePriceCheck";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { toast } from "@/components/ui/sonner";
@@ -23,11 +26,12 @@ import { ScanResult } from "../visualScanner/VisualScanner";
 
 interface PriceCheckProps {
   isPremium: boolean;
+  onTabChange?: (tabName: string) => void; // New prop for tab navigation
 }
 
 const FREE_SEARCH_LIMIT = 10;
 
-const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
+const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
   
   const {
     loading,
@@ -137,6 +141,21 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
   const getTabContentClass = () => {
     return `flex-1 p-3 py-2 overflow-y-auto ${listingInfo.isAuction ? 'auction-tab-content' : 'fixed-price-tab-content'}`;
   };
+
+  // Navigate to other tabs
+  const handleNavigateToBidEdge = () => {
+    if (onTabChange) {
+      onTabChange("bidedge");
+      toast.info("Opening auction in BidEdge...");
+    }
+  };
+
+  const handleNavigateToArbitrage = () => {
+    if (onTabChange) {
+      onTabChange("arbitrage");
+      toast.info("Opening Arbitrage Finder...");
+    }
+  };
   
   return (
     <div className="flex flex-col space-y-2">
@@ -206,6 +225,27 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
         bids={listingInfo.bids}
         timeRemaining={listingInfo.timeRemaining}
       />
+
+      {/* BidEdge Promo Component - only for auctions */}
+      {listingInfo.isAuction && (
+        <BidEdgePromo
+          isPremium={isPremium}
+          isAuction={listingInfo.isAuction}
+          bids={listingInfo.bids}
+          timeRemaining={listingInfo.timeRemaining}
+          onButtonClick={handleNavigateToBidEdge}
+        />
+      )}
+      
+      {/* Arbitrage Alert Promo - only when there's price data showing potential profit */}
+      {priceData && priceData.averagePrice > 0 && !loading && (
+        <ArbitrageAlertPromo
+          isPremium={isPremium}
+          currentPrice={listingInfo.currentPrice || 0}
+          averagePrice={priceData.averagePrice}
+          onButtonClick={handleNavigateToArbitrage}
+        />
+      )}
       
       {/* Data sharing notification for successfully checked prices */}
       {priceData && priceData.averagePrice > 0 && !loading && (
@@ -252,10 +292,10 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
   );
 };
 
-const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
+const PriceCheck: React.FC<PriceCheckProps> = (props) => {
   return (
     <ErrorBoundary>
-      <PriceCheckContent isPremium={isPremium} />
+      <PriceCheckContent {...props} />
     </ErrorBoundary>
   );
 };
