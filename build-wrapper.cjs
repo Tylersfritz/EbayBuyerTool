@@ -2,7 +2,7 @@
 /**
  * CommonJS Build Wrapper
  * This script acts as a CommonJS wrapper around the ES module build script
- * to resolve module system conflicts without requiring multiple file changes
+ * to resolve module system conflicts without requiring package.json modifications
  */
 
 const { execSync } = require('child_process');
