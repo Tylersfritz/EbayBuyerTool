@@ -19,13 +19,15 @@ node unified-build.js
 If you encounter any issues with the main build script, try the direct extension build:
 
 ```bash
-node unified-build-extension.js
+node unified-build-extension.cjs
 ```
 
 These scripts will:
 
 1. Run the Vite build process
-2. Run the extension build process to copy necessary files to the dist directory
+2. Copy all necessary files from public/ to the dist directory
+3. Verify the presence of critical components (ArbitragePrompt and VisualScanner)
+4. Check for properly compiled JavaScript files in dist/assets/
 
 ## Troubleshooting
 
