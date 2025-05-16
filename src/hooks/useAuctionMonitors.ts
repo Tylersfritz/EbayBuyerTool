@@ -1,9 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AuctionMonitorData, AuctionMonitorRequest } from '@/utils/marketplaceAdapters';
-import { createAuctionMonitor, getUserAuctionMonitors, updateAuctionMonitor, cancelAuctionMonitor, deleteAuctionMonitor } from '@/services/auctionMonitorService';
-import { toast } from '@/components/ui/sonner';
+import { AuctionMonitorRequest, AuctionMonitorData } from '@/utils/marketplaceAdapters';
+import { 
+  createAuctionMonitor, 
+  getUserAuctionMonitors, 
+  updateAuctionMonitor, 
+  cancelAuctionMonitor, 
+  deleteAuctionMonitor 
+} from '@/services/auctionMonitorService';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
 export function useAuctionMonitors() {
@@ -11,7 +17,7 @@ export function useAuctionMonitors() {
   const { user, isPremium } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch all auction monitors for the current user
+  // Fetch all monitors for the current user
   const { 
     data: monitors = [],
     isLoading: isLoadingMonitors,
@@ -29,17 +35,17 @@ export function useAuctionMonitors() {
 
   // Create a new auction monitor
   const createMonitorMutation = useMutation({
-    mutationFn: async (newMonitor: AuctionMonitorRequest) => {
-      const result = await createAuctionMonitor(newMonitor);
+    mutationFn: async (monitorRequest: AuctionMonitorRequest) => {
+      const result = await createAuctionMonitor(monitorRequest);
       if (result.error) throw result.error;
       return result.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auctionMonitors', user?.id] });
-      toast.success('Auction monitor setup successfully!');
+      toast.success('Auction monitor created successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to set up auction monitor: ${error.message}`);
+      toast.error(`Failed to create monitor: ${error.message}`);
     }
   });
 
@@ -52,10 +58,10 @@ export function useAuctionMonitors() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auctionMonitors', user?.id] });
-      toast.success('Auction monitor updated successfully!');
+      toast.success('Monitor updated successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update auction monitor: ${error.message}`);
+      toast.error(`Failed to update monitor: ${error.message}`);
     }
   });
 
@@ -68,10 +74,10 @@ export function useAuctionMonitors() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auctionMonitors', user?.id] });
-      toast.success('Auction monitor cancelled successfully!');
+      toast.success('Monitor cancelled successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to cancel auction monitor: ${error.message}`);
+      toast.error(`Failed to cancel monitor: ${error.message}`);
     }
   });
 
@@ -84,12 +90,36 @@ export function useAuctionMonitors() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auctionMonitors', user?.id] });
-      toast.success('Auction monitor deleted successfully!');
+      toast.success('Monitor deleted successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete auction monitor: ${error.message}`);
+      toast.error(`Failed to delete monitor: ${error.message}`);
     }
   });
+
+  // Find comparable items for market analysis
+  const findComparableItems = async (itemId: string, title: string, category?: string) => {
+    try {
+      // In a real implementation, this would call an API endpoint
+      // For now we'll return mock data
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
+      
+      return {
+        marketRate: 95.50,
+        itemCount: 12,
+        priceRange: { min: 75.00, max: 135.00 },
+        dateRange: 'Last 30 days',
+        items: [
+          { title: 'Similar item 1', price: 92.00, condition: 'Used - Like New', dateSold: '2 days ago' },
+          { title: 'Similar item 2', price: 103.50, condition: 'Used - Good', dateSold: '1 week ago' },
+          { title: 'Similar item 3', price: 88.75, condition: 'Used - Acceptable', dateSold: 'Yesterday' }
+        ]
+      };
+    } catch (error) {
+      console.error('Error finding comparable items:', error);
+      return null;
+    }
+  };
 
   // Calculate remaining time for auctions
   const calculateTimeRemaining = (endTime: Date): { days: number; hours: number; minutes: number; seconds: number } => {
@@ -108,30 +138,6 @@ export function useAuctionMonitors() {
     return { days, hours, minutes, seconds };
   };
 
-  // Function to find comparable items using Market Insights API
-  const findComparableItems = async (itemId: string, title: string, category: string | undefined) => {
-    setIsLoading(true);
-    try {
-      // This is a placeholder for the actual API call to the Market Insights API
-      // In a real implementation, we would call the API to fetch comparable items
-      const apiUrl = `/api/price-check?itemId=${itemId}&itemName=${encodeURIComponent(title)}`;
-      
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comparable items');
-      }
-      
-      const data = await response.json();
-      setIsLoading(false);
-      return data;
-    } catch (error) {
-      setIsLoading(false);
-      toast.error('Failed to find comparable items');
-      console.error('Error finding comparable items:', error);
-      return null;
-    }
-  };
-
   return {
     monitors,
     isLoadingMonitors,
@@ -145,8 +151,7 @@ export function useAuctionMonitors() {
     isCancellingMonitor: cancelMonitorMutation.isPending,
     deleteMonitor: deleteMonitorMutation.mutate,
     isDeletingMonitor: deleteMonitorMutation.isPending,
-    calculateTimeRemaining,
     findComparableItems,
-    isLoadingComparables: isLoading
+    calculateTimeRemaining
   };
 }
