@@ -185,5 +185,4 @@ if (!fs.existsSync(distDir)) {
 }
 
 console.log('\n✅ File check and fix process completed!');
-console.log('\nNext step: Run "node public/safe-rebuild-extension.js" to rebuild your extension');
-
+console.log('\nNext step: Run "node public/safe-rebuild-extension.cjs" to rebuild your extension');
