@@ -148,6 +148,12 @@ export default defineConfig(({ mode }) => {
             { src: './public/content.js', dest: './dist/content.js', critical: true },
             { src: './public/background.js', dest: './dist/background.js', critical: true },
             { src: './public/mercari-content.js', dest: './dist/mercari-content.js', critical: true },
+            // Add web accessible resources here
+            { src: './public/price-check.png', dest: './dist/price-check.png', critical: true },
+            { src: './public/negotiation-assistance.png', dest: './dist/negotiation-assistance.png', critical: true },
+            { src: './public/auction-bidedge.png', dest: './dist/auction-bidedge.png', critical: true },
+            { src: './public/auction-sniping.png', dest: './dist/auction-sniping.png', critical: true },
+            { src: './public/arbitrage-search.png', dest: './dist/arbitrage-search.png', critical: true }
           ];
           
           // Copy each file if it exists

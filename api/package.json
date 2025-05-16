@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "build": "node ../public/run-build-extension.js",
-    "fix-manifest": "node ../public/fix-manifest.js"
+    "fix-manifest": "node ../public/fix-manifest.js",
+    "create-images": "node ../public/create-web-resource-images.js"
   },
   "dependencies": {
     "node-fetch": "^2.7.0",

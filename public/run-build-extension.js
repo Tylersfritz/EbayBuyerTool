@@ -5,7 +5,8 @@
  * 1. Run fix-manifest.js to prepare manifest and files
  * 2. Run vite build to build the React app
  * 3. Run build-extension.js to copy all files to dist
- * 4. Validate the extension build
+ * 4. Run copy-web-accessible-resources.js to ensure all web resources are copied
+ * 5. Validate the extension build
  */
 const { execSync } = require('child_process');
 const path = require('path');
@@ -53,9 +54,15 @@ if (!runStep(3, `node ${path.join(__dirname, 'build-extension.js')}`, 'Failed to
   process.exit(1);
 }
 
-// Step 4: Validate the extension build
-console.log('\n🔍 Step 4: Validating extension build...');
-if (!runStep(4, `node ${path.join(__dirname, 'verify-build.js')}`, 'Extension validation failed')) {
+// Step 4: Run copy-web-accessible-resources.js to ensure all web resources are copied
+console.log('\n🖼️ Step 4: Copying web accessible resources...');
+if (!runStep(4, `node ${path.join(__dirname, 'copy-web-accessible-resources.js')}`, 'Failed to copy web accessible resources')) {
+  process.exit(1);
+}
+
+// Step 5: Validate the extension build
+console.log('\n🔍 Step 5: Validating extension build...');
+if (!runStep(5, `node ${path.join(__dirname, 'verify-build.js')}`, 'Extension validation failed')) {
   process.exit(1);
 }
 
