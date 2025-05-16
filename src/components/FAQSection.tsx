@@ -23,7 +23,7 @@ const FAQSection = () => {
     },
     {
       question: "What's the difference between the free and premium versions?",
-      answer: "The free version gives you access to basic price checking (limited to 5 checks per month), simple negotiation templates, and deal scoring. Premium unlocks unlimited price checks, advanced negotiation AI, price history trends, auction sniping tools, arbitrage finder, and priority support."
+      answer: "The free version gives you access to basic price checking (limited to 10 checks per day), simple negotiation templates, and deal scoring. Premium unlocks unlimited price checks, advanced negotiation AI, price history trends, auction sniping tools, arbitrage finder, and priority support."
     },
     {
       question: "How do I cancel my premium subscription?",

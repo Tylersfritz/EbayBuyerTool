@@ -1,6 +1,5 @@
 
 import React from 'react';
-import ArbitragePromoButton from '../ArbitragePromoButton';
 
 interface PromotionAlertProps {
   isAuction: boolean;
@@ -8,7 +7,6 @@ interface PromotionAlertProps {
   originalPrice?: number;
   currentPrice: number;
   marketRate?: number | null;
-  onArbitrageClick?: () => void;
 }
 
 const PromotionAlert: React.FC<PromotionAlertProps> = ({
@@ -16,8 +14,7 @@ const PromotionAlert: React.FC<PromotionAlertProps> = ({
   isOnSale,
   originalPrice,
   currentPrice,
-  marketRate,
-  onArbitrageClick
+  marketRate
 }) => {
   // Format the profit amount
   const formatPrice = (price: number | string): string => {
@@ -43,11 +40,6 @@ const PromotionAlert: React.FC<PromotionAlertProps> = ({
             Auction Market Rate: {formatPrice(marketRate)}
           </p>
         </div>
-      )}
-
-      {/* Arbitrage Promo Button */}
-      {onArbitrageClick && (
-        <ArbitragePromoButton onClick={onArbitrageClick} />
       )}
     </>
   );
