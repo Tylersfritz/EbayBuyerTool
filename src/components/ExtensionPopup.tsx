@@ -4,10 +4,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import PriceCheck from "./tabs/PriceCheck";
 import Negotiate from "./tabs/Negotiate";
-import AuctionSnipe from "./tabs/AuctionSnipe";
+import BidEdge from "./tabs/BidEdge";
 import Arbitrage from "./tabs/Arbitrage";
 import { saveToStorage, getFromStorage } from "@/utils/extensionUtils";
-import { Settings, RefreshCcw, ShieldCheck, AlertCircle, KeyRound, Package, Gavel, Tag } from "lucide-react";
+import { Settings, RefreshCcw, ShieldCheck, AlertCircle, KeyRound, Package, TrendingUp, Tag } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { getApiConfig } from '@/api/apiConfig';
 import { useApiHealth } from '@/context/ApiHealthContext';
@@ -161,7 +161,7 @@ const ExtensionPopup: React.FC = () => {
                 <span className="text-xs text-gray-700 flex items-center cursor-help">
                   {isAuctionMode ? (
                     <>
-                      <Gavel className="h-4 w-4 mr-1.5 text-amber-500" />
+                      <TrendingUp className="h-4 w-4 mr-1.5 text-amber-500" />
                       Test Auction Mode
                     </>
                   ) : (
@@ -213,10 +213,10 @@ const ExtensionPopup: React.FC = () => {
               <Badge variant="secondary" className="text-[0.65rem] px-1 py-0 bg-gray-200 text-gray-700">Free</Badge>
             </TabsTrigger>
             <TabsTrigger 
-              value="snipe" 
+              value="bidedge" 
               className="flex flex-col items-center justify-center py-2 px-1 data-[state=active]:bg-white data-[state=active]:shadow-sm space-y-1 h-[56px]"
             >
-              <span className="text-xs">Snipe</span>
+              <span className="text-xs">BidEdge</span>
               <Badge variant="premium" className="text-[0.65rem] px-1 py-0 bg-blue-500 text-white">Premium</Badge>
             </TabsTrigger>
             <TabsTrigger 
@@ -237,8 +237,8 @@ const ExtensionPopup: React.FC = () => {
           <Negotiate isPremium={isPremium} />
         </TabsContent>
         
-        <TabsContent value="snipe" className="flex-1 px-4 py-3 overflow-y-auto m-0 data-[state=active]:animate-[fade-in_0.2s_ease-out]">
-          <AuctionSnipe isPremium={isPremium} />
+        <TabsContent value="bidedge" className="flex-1 px-4 py-3 overflow-y-auto m-0 data-[state=active]:animate-[fade-in_0.2s_ease-out]">
+          <BidEdge isPremium={isPremium} />
         </TabsContent>
         
         <TabsContent value="arbitrage" className="flex-1 px-4 py-3 overflow-y-auto m-0 data-[state=active]:animate-[fade-in_0.2s_ease-out]">
