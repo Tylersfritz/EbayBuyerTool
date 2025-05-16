@@ -37,7 +37,7 @@ const PromotionAlert: React.FC<PromotionAlertProps> = ({
       {marketRate && (
         <div className="mt-1 bg-blue-50 px-2 py-0.5 rounded-sm border border-blue-100">
           <p className="text-xs text-blue-800 font-medium">
-            Auction Market Rate: {formatPrice(marketRate)}
+            {isAuction ? "Auction Market Rate" : "Market Rate"}: {formatPrice(marketRate)}
           </p>
         </div>
       )}
