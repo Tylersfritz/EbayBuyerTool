@@ -19,6 +19,7 @@ interface PremiumOnlyLockProps {
   }>;
   successMetric?: string;
   icon?: ReactNode;
+  onClose?: () => void; // Added onClose prop
 }
 
 const PremiumOnlyLock: React.FC<PremiumOnlyLockProps> = ({
@@ -30,7 +31,8 @@ const PremiumOnlyLock: React.FC<PremiumOnlyLockProps> = ({
   previewData,
   premiumBenefits,
   successMetric,
-  icon
+  icon,
+  onClose // Added onClose to component props
 }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full relative">
@@ -129,6 +131,7 @@ const PremiumOnlyLock: React.FC<PremiumOnlyLockProps> = ({
         <Button 
           variant="premium" 
           className="mb-2 w-full relative overflow-hidden hover:scale-105 transition-transform duration-200"
+          onClick={onClose} // Use onClose if provided
         >
           {ctaText}
           <ChevronRight className="h-4 w-4 ml-1" />
