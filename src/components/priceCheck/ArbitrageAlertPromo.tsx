@@ -35,8 +35,8 @@ const ArbitrageAlertPromo: React.FC<ArbitrageAlertPromoProps> = ({
   return (
     <PromoFeatureCard
       icon={BadgePercent}
-      title="Arbitrage Opportunity Detected!"
-      description={`This item has ~${profitPercentFormatted}% profit potential (${profitFormatted}). Find similar flipping deals in our Arbitrage Finder.`}
+      title="Arbitrage Opportunity!"
+      description={`~${profitPercentFormatted}% profit potential (${profitFormatted}). Find similar flipping deals.`}
       buttonText="Find Flipping Deals"
       onButtonClick={onButtonClick}
       isPremium={isPremium}

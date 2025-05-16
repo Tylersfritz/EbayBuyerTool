@@ -1,3 +1,4 @@
+
 // src/components/priceCheck/CurrentListingCard.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,7 +92,7 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
   if (loadingListingInfo) {
     return (
       <Card className="mb-2">
-        <CardContent className="p-3 space-y-2">
+        <CardContent className="p-2.5 space-y-2">
           <Skeleton className="h-3 w-3/4" />
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-4 w-1/2" />
@@ -120,8 +121,9 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
 
   return (
     <Card className={`mb-2 ${cardBorderClass}`}>
-      <CardContent className="p-3">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="p-2.5">
+        {/* Header with item ID and listing type badge */}
+        <div className="mb-1.5 flex items-center justify-between">
           <p className="text-xs text-gray-600 font-medium flex items-center">
             {listingInfo.itemId && (
               <TooltipProvider>
@@ -153,10 +155,13 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
           )}
         </div>
         
-        <p className="text-sm font-semibold line-clamp-2">{listingInfo.title}</p>
+        {/* Item title */}
+        <p className="text-sm font-semibold line-clamp-2 mb-1.5">{listingInfo.title}</p>
 
-        <div className="grid grid-cols-2 gap-4 mb-2 mt-2">
-          <div className="space-y-2">
+        {/* Main content area - reformatted to use space better */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-1">
+          <div>
+            {/* Left column - Price information */}
             {!listingInfo.isAuction && (
               <>
                 <div className="flex justify-between items-center">
@@ -184,15 +189,6 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                           ((originalPrice - currentPrice) / originalPrice * 100))}%
                       </Badge>
                     </div>
-                  </div>
-                )}
-                
-                {listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-gray-600">Quantity:</span>
-                    <span className="text-xs font-medium">
-                      {listingInfo.quantityAvailable} available
-                    </span>
                   </div>
                 )}
               </>
@@ -254,129 +250,151 @@ const CurrentListingCard: React.FC<CurrentListingCardProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                
-                {listingInfo.timeRemaining && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-600 flex items-center">
-                        <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
-                        Time left:
-                      </span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={`text-xs font-medium ${getTimeColor()}`}>
-                              {listingInfo.timeRemaining}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            <p className="text-xs">{getTimeTooltip()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <div className="mt-1">
-                      <Progress 
-                        value={calculateTimeProgress()} 
-                        className="h-1" 
-                        indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
-                                              calculateTimeProgress() > 60 ? "bg-amber-500" : 
-                                              "bg-blue-500"}
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {listingInfo.watchers && listingInfo.watchers > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-gray-600 flex items-center">
-                      <Eye className="h-3 w-3 mr-1 text-blue-500" />
-                      Watchers:
-                    </span>
-                    <span className="text-xs font-medium">
-                      {listingInfo.watchers}
-                    </span>
-                  </div>
-                )}
               </>
             )}
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          {listingInfo.condition && (
-            <div className="flex justify-between">
-              <span className="text-xs font-medium text-gray-600">Condition:</span>
-              <span className="text-xs">{listingInfo.condition}</span>
-            </div>
-          )}
-          {listingInfo.shipping && (
-            <div className="flex justify-between">
-              <span className="text-xs font-medium text-gray-600">Shipping:</span>
-              <span className="text-xs">{listingInfo.shipping}</span>
-            </div>
-          )}
-          {listingInfo.seller && (
-            <div className="flex justify-between">
-              <span className="text-xs font-medium text-gray-600">Seller:</span>
-              <div className="flex items-center">
-                <span className="text-xs truncate ml-1 max-w-[60px]">{listingInfo.seller}</span>
-                {listingInfo.sellerFeedbackScore && (
+            {/* Quantity info for fixed price listings */}
+            {!listingInfo.isAuction && listingInfo.quantityAvailable && listingInfo.quantityAvailable > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-gray-600">Quantity:</span>
+                <span className="text-xs font-medium">
+                  {listingInfo.quantityAvailable} available
+                </span>
+              </div>
+            )}
+            
+            {/* Time remaining for auctions */}
+            {listingInfo.isAuction && listingInfo.timeRemaining && (
+              <div className="mt-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-gray-600 flex items-center">
+                    <Timer className="h-3 w-3 mr-1 text-amber-500" /> 
+                    Time left:
+                  </span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="ml-1 text-[0.65rem] px-1 py-0 h-4">
-                          {listingInfo.sellerPositivePercentage}%
-                        </Badge>
+                        <span className={`text-xs font-medium ${getTimeColor()}`}>
+                          {listingInfo.timeRemaining}
+                        </span>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p className="text-xs">Feedback score: {listingInfo.sellerFeedbackScore}</p>
+                      <TooltipContent side="right">
+                        <p className="text-xs">{getTimeTooltip()}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                </div>
+                <div className="mt-0.5">
+                  <Progress 
+                    value={calculateTimeProgress()} 
+                    className="h-1" 
+                    indicatorClassName={calculateTimeProgress() > 80 ? "bg-red-500" : 
+                                          calculateTimeProgress() > 60 ? "bg-amber-500" : 
+                                          "bg-blue-500"}
+                  />
+                </div>
               </div>
+            )}
+          </div>
+          
+          {/* Right column - Listing details */}
+          <div className="space-y-1">
+            {/* Condition + Shipping on same row */}
+            <div className="grid grid-cols-2 gap-1">
+              {listingInfo.condition && (
+                <div className="flex justify-between">
+                  <span className="text-xs font-medium text-gray-600">Condition:</span>
+                  <span className="text-xs">{listingInfo.condition}</span>
+                </div>
+              )}
+              {listingInfo.shipping && (
+                <div className="flex justify-between">
+                  <span className="text-xs font-medium text-gray-600">Shipping:</span>
+                  <span className="text-xs">{listingInfo.shipping}</span>
+                </div>
+              )}
             </div>
-          )}
-          {listingInfo.returnPolicy && (
-            <div className="flex justify-between">
-              <span className="text-xs font-medium text-gray-600">Returns:</span>
-              <span className="text-xs">{listingInfo.returnPolicy}</span>
-            </div>
-          )}
-          {listingInfo.isAuction && listingInfo.firstBidTime && (
-            <div className="flex justify-between">
-              <span className="text-xs font-medium text-gray-600">First bid:</span>
-              <span className="text-xs">
-                {new Date(listingInfo.firstBidTime).toLocaleDateString()}
-              </span>
-            </div>
-          )}
+            
+            {/* Seller info */}
+            {listingInfo.seller && (
+              <div className="flex justify-between">
+                <span className="text-xs font-medium text-gray-600">Seller:</span>
+                <div className="flex items-center">
+                  <span className="text-xs truncate ml-1 max-w-[60px]">{listingInfo.seller}</span>
+                  {listingInfo.sellerFeedbackScore && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="ml-1 text-[0.65rem] px-1 py-0 h-4">
+                            {listingInfo.sellerPositivePercentage}%
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p className="text-xs">Feedback score: {listingInfo.sellerFeedbackScore}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Returns policy */}
+            {listingInfo.returnPolicy && (
+              <div className="flex justify-between">
+                <span className="text-xs font-medium text-gray-600">Returns:</span>
+                <span className="text-xs">{listingInfo.returnPolicy}</span>
+              </div>
+            )}
+            
+            {/* First bid time for auctions */}
+            {listingInfo.isAuction && listingInfo.firstBidTime && (
+              <div className="flex justify-between">
+                <span className="text-xs font-medium text-gray-600">First bid:</span>
+                <span className="text-xs">
+                  {new Date(listingInfo.firstBidTime).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            
+            {/* Watchers count for auctions */}
+            {listingInfo.isAuction && listingInfo.watchers && listingInfo.watchers > 0 && (
+              <div className="flex justify-between">
+                <span className="text-xs font-medium text-gray-600 flex items-center">
+                  <Eye className="h-3 w-3 mr-1 text-blue-500" />
+                  Watchers:
+                </span>
+                <span className="text-xs font-medium">
+                  {listingInfo.watchers}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         
-        {!listingInfo.isAuction && isOnSale && (
-          <div className="mt-1 bg-green-50 px-2 py-1 rounded-sm border border-green-100">
-            <p className="text-xs text-green-800 font-medium">
-              This item is on sale! Save {formatPrice(
-                (listingInfo.originalPrice || 0) - listingInfo.currentPrice
-              )} off the original price.
-            </p>
-          </div>
-        )}
-        
-        {listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0 && (
-          <div className="mt-1 bg-amber-50 px-2 py-1 rounded-sm border border-amber-100">
-            <p className="text-xs text-amber-800 font-medium flex items-center">
-              <Clock className="h-3 w-3 mr-1 text-amber-600" />
-              {listingInfo.bids > 5 
-                ? `Active auction with ${listingInfo.bids} bids - consider setting a maximum bid` 
-                : "Auction has few bids - potential opportunity"}
-            </p>
+        {/* Alert/Notification area - condensed */}
+        {((!listingInfo.isAuction && isOnSale) || (listingInfo.isAuction && listingInfo.bids && listingInfo.bids > 0)) && (
+          <div className={`mt-1 px-2 py-0.5 rounded-sm border text-xs ${
+            !listingInfo.isAuction ? 'bg-green-50 border-green-100 text-green-800' : 'bg-amber-50 border-amber-100 text-amber-800'
+          }`}>
+            {!listingInfo.isAuction && isOnSale ? (
+              <p className="font-medium">
+                Save {formatPrice((listingInfo.originalPrice || 0) - listingInfo.currentPrice)} off original price!
+              </p>
+            ) : (
+              <p className="font-medium flex items-center">
+                <Clock className="h-3 w-3 mr-1 text-amber-600" />
+                {listingInfo.bids && listingInfo.bids > 5 
+                  ? `Active auction with ${listingInfo.bids} bids` 
+                  : "Few bids - potential opportunity"}
+              </p>
+            )}
           </div>
         )}
 
+        {/* Market rate info (if available) */}
         {marketRate && (
-          <div className="mt-2 bg-blue-50 px-2 py-1 rounded-sm border border-blue-100">
+          <div className="mt-1 bg-blue-50 px-2 py-0.5 rounded-sm border border-blue-100">
             <p className="text-xs text-blue-800 font-medium">
               Auction Market Rate: ${marketRate}
             </p>

@@ -40,18 +40,18 @@ const PromoFeatureCard: React.FC<PromoFeatureCardProps> = ({
                   "bg-gray-50 border-gray-200";
 
   return (
-    <Card className={`mb-1 py-2 px-3 shadow-sm ${bgColor} ${animationClass}`}>
+    <Card className={`mb-1 py-1.5 px-2.5 shadow-sm ${bgColor} ${animationClass}`}>
       <div className="flex items-start">
-        <div className={`p-1.5 rounded-full mr-2 flex-shrink-0
+        <div className={`p-1 rounded-full mr-2 flex-shrink-0
           ${variant === "premium" ? "bg-blue-100 text-blue-600" : 
             variant === "arbitrage" ? "bg-amber-100 text-amber-600" : 
             "bg-gray-100 text-gray-600"}`}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-3 w-3" />
         </div>
         
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-0.5">
+          <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">{title}</h3>
             {!isPremium && showPremiumBadge && (
               <Badge variant={variant === "arbitrage" ? "warning" : "premium"} className="text-xs ml-1">
@@ -60,14 +60,14 @@ const PromoFeatureCard: React.FC<PromoFeatureCardProps> = ({
             )}
           </div>
           
-          <p className="text-xs text-muted-foreground mb-1.5">
+          <p className="text-xs text-muted-foreground mb-1">
             {description}
           </p>
           
           <Button
             variant={buttonVariant}
             size="sm"
-            className="w-full text-xs py-0.5 h-7"
+            className="w-full text-xs py-0.5 h-6"
             onClick={onButtonClick}
             disabled={!isPremium}
           >
