@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockPriceHistoryData, mockAuctionPriceHistoryData } from './utils/mockData';
 import { useModeContext } from '@/context/ModeContext';
+import { History } from 'lucide-react';
 
 interface PriceHistoryPoint {
   date: string;
@@ -135,15 +136,18 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
               </LineChart>
             </ResponsiveContainer>
             
-            {/* Current price indicator */}
-            <div className="flex justify-between items-center mt-3 text-xs bg-gray-50 p-2 rounded-md border border-gray-100">
-              <span className="text-gray-600">Historical Average:</span>
-              <span className="font-semibold">
-                {new Intl.NumberFormat('en-US', { 
-                  style: 'currency', 
-                  currency: 'USD' 
-                }).format(avgHistoricalPrice)}
-              </span>
+            {/* Enhanced historical average indicator with better visibility */}
+            <div className="flex items-center my-4 p-3 bg-blue-50 rounded-md border border-blue-100 border-l-4 border-l-primary">
+              <History className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
+              <div className="flex justify-between items-center w-full">
+                <span className="text-gray-800 text-sm font-medium">Historical Average:</span>
+                <span className="text-primary font-bold text-base">
+                  {new Intl.NumberFormat('en-US', { 
+                    style: 'currency', 
+                    currency: 'USD' 
+                  }).format(avgHistoricalPrice)}
+                </span>
+              </div>
             </div>
           </div>
         )}
