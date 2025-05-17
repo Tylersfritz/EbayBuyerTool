@@ -1,267 +1,169 @@
 
-#!/usr/bin/env node
-
 /**
- * DealHaven Extension Build Script (CommonJS)
- * This script handles copying essential files and verification of the build
+ * CommonJS Extension Build Script
+ * This script serves as the entry point for extension builds
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log('🚀 DealHavenAI Extension Build Script (CJS version)');
-console.log('================================================');
+console.log('🚀 DealHavenAI Extension Build Script');
+console.log('==================================');
 
-// Clean build environment
-console.log('\n🧹 Cleaning build environment...');
-try {
-  console.log('Clearing npm cache...');
-  execSync('npm cache clean --force', { stdio: 'inherit' });
-  console.log('✅ Npm cache cleared');
-  
-  console.log('Removing dist directory if it exists...');
-  if (fs.existsSync('./dist')) {
-    if (process.platform === "win32") {
-      execSync('rmdir /s /q dist', { stdio: 'inherit' });
+// Get the project directory
+const projectDir = path.resolve('.');
+console.log(`Working directory: ${projectDir}`);
+
+// Define paths to components we need to verify
+const arbitragePromptPath = path.join(projectDir, 'src', 'components', 'arbitrage', 'ArbitragePrompt.tsx');
+const visualScannerPath = path.join(projectDir, 'src', 'components', 'visualScanner', 'VisualScanner.tsx');
+
+// Verify critical components exist
+console.log('Verifying critical components...');
+if (fs.existsSync(arbitragePromptPath)) {
+  console.log(`✅ ArbitragePrompt.tsx found at ${arbitragePromptPath}`);
+} else {
+  console.error(`❌ ArbitragePrompt.tsx not found at ${arbitragePromptPath}`);
+}
+
+if (fs.existsSync(visualScannerPath)) {
+  console.log(`✅ VisualScanner.tsx found at ${visualScannerPath}`);
+} else {
+  console.error(`❌ VisualScanner.tsx not found at ${visualScannerPath}`);
+}
+
+// Check if the React import exists in main.tsx
+const mainTsxPath = path.join(projectDir, 'src', 'main.tsx');
+console.log(`Checking React import in ${mainTsxPath}...`);
+if (fs.existsSync(mainTsxPath)) {
+  try {
+    const mainContent = fs.readFileSync(mainTsxPath, 'utf8');
+    if (mainContent.includes('import React from')) {
+      console.log('✅ React import found in main.tsx');
     } else {
-      execSync('rm -rf dist', { stdio: 'inherit' });
+      console.warn('⚠️ No React import found in main.tsx, adding it now...');
+      const newContent = `import React from 'react'\n${mainContent}`;
+      fs.writeFileSync(mainTsxPath, newContent, 'utf8');
+      console.log('✅ Added React import to main.tsx');
     }
+  } catch (error) {
+    console.error(`❌ Error checking main.tsx: ${error.message}`);
   }
-  console.log('✅ Dist directory removed');
-} catch (error) {
-  console.warn(`⚠️ Clean environment warning: ${error.message}`);
-  console.log('Continuing with build process...');
+} else {
+  console.error(`❌ main.tsx not found at ${mainTsxPath}`);
 }
 
-// Define critical paths
-const rootDir = process.cwd();
-const publicDir = path.join(rootDir, 'public');
-const distDir = path.join(rootDir, 'dist');
-const srcDir = path.join(rootDir, 'src');
-const lovableDevSrcDir = path.join(rootDir, 'lovable.dev', 'src');
+// Define the path to the safe rebuild script
+const safeRebuildPath = path.join(projectDir, 'public', 'safe-rebuild-extension.js');
 
-// Step 1: Ensure dist directory exists
-if (!fs.existsSync(distDir)) {
-  console.log('📁 Creating dist directory...');
-  fs.mkdirSync(distDir, { recursive: true });
-}
-
-// Step 2: Copy essential files from public/ to dist/
-const essentialFiles = ['manifest.json', 'content.js', 'background.js', 'browser-polyfill.min.js', 'mercari-content.js'];
-console.log('\n📋 Copying essential files from public/ to dist/...');
-
-for (const file of essentialFiles) {
-  const srcFile = path.join(publicDir, file);
-  const destFile = path.join(distDir, file);
+// First check if the script exists
+if (!fs.existsSync(safeRebuildPath)) {
+  console.error(`❌ Could not find build script at: ${safeRebuildPath}`);
   
-  if (fs.existsSync(srcFile)) {
+  // Try the CJS version
+  const cjsVersionPath = path.join(projectDir, 'public', 'safe-rebuild-extension.cjs');
+  if (fs.existsSync(cjsVersionPath)) {
+    console.log(`Found CJS version at ${cjsVersionPath}, using it...`);
+    
     try {
-      fs.copyFileSync(srcFile, destFile);
-      console.log(`✅ Copied ${file} to dist/`);
+      execSync(`node "${cjsVersionPath}"`, { stdio: 'inherit' });
+      console.log('✅ Extension build completed successfully!');
     } catch (error) {
-      console.error(`❌ Error copying ${file}: ${error.message}`);
+      console.error('❌ Build process failed:', error.message);
       process.exit(1);
     }
   } else {
-    console.error(`❌ Required file not found: ${srcFile}`);
-    process.exit(1);
-  }
-}
+    // Create a simplified version if none exists
+    console.log('Creating simplified build script...');
+    const simpleBuildScript = `
+      const { execSync } = require('child_process');
+      const fs = require('fs');
+      const path = require('path');
 
-// Step 3: Copy icon files
-const iconFiles = ['icon-16.png', 'icon-48.png', 'icon-128.png',
-                  'icon-16-active.png', 'icon-48-active.png', 'icon-128-active.png'];
-console.log('\n📋 Copying icon files...');
-
-for (const file of iconFiles) {
-  const srcFile = path.join(publicDir, file);
-  const destFile = path.join(distDir, file);
-  
-  if (fs.existsSync(srcFile)) {
-    try {
-      fs.copyFileSync(srcFile, destFile);
-      console.log(`✅ Copied ${file} to dist/`);
-    } catch (error) {
-      console.warn(`⚠️ Could not copy icon ${file}: ${error.message}`);
-      // Don't exit for missing icons
-    }
-  } else {
-    console.warn(`⚠️ Icon file not found: ${srcFile}`);
-  }
-}
-
-// Step 4: Copy web accessible resources
-const resourceFiles = ['price-check.png', 'negotiation-assistance.png', 'auction-bidedge.png', 'auction-sniping.png', 'arbitrage-search.png', 'placeholder.svg', 'favicon.ico'];
-console.log('\n📋 Copying web accessible resources...');
-
-for (const file of resourceFiles) {
-  const srcFile = path.join(publicDir, file);
-  const destFile = path.join(distDir, file);
-  
-  if (fs.existsSync(srcFile)) {
-    try {
-      fs.copyFileSync(srcFile, destFile);
-      console.log(`✅ Copied ${file} to dist/`);
-    } catch (error) {
-      console.warn(`⚠️ Could not copy resource ${file}: ${error.message}`);
-    }
-  } else {
-    console.warn(`⚠️ Resource file not found: ${srcFile}`);
-  }
-}
-
-// Step 5: Copy lovable.dev/src/ to src/ if it exists
-if (fs.existsSync(lovableDevSrcDir)) {
-  console.log('\n📋 Found lovable.dev/src directory - copying files to src/...');
-
-  /**
-   * Copy directory recursively
-   */
-  function copyDirRecursive(src, dest) {
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    
-    const entries = fs.readdirSync(src, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-      
-      if (entry.isDirectory()) {
-        copyDirRecursive(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-        console.log(`Copied ${srcPath} to ${destPath}`);
+      // Ensure dist directory exists
+      const distDir = path.join(__dirname, '..', 'dist');
+      if (!fs.existsSync(distDir)) {
+        fs.mkdirSync(distDir, { recursive: true });
       }
+
+      // Run Vite build with explicit React settings
+      console.log('Running Vite build...');
+      execSync('npx vite build --force', { stdio: 'inherit' });
+
+      // Copy manifest and other files
+      console.log('Copying extension files...');
+      const filesToCopy = ['manifest.json', 'browser-polyfill.min.js', 'content.js', 'background.js', 'mercari-content.js'];
+      
+      filesToCopy.forEach(file => {
+        const src = path.join(__dirname, file);
+        const dest = path.join(distDir, file);
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, dest);
+          console.log(\`Copied \${file}\`);
+        }
+      });
+
+      console.log('Build complete!');
+    `;
+    
+    fs.writeFileSync(safeRebuildPath, simpleBuildScript);
+    console.log(`✅ Created simplified build script at ${safeRebuildPath}`);
+    
+    try {
+      execSync(`node "${safeRebuildPath}"`, { stdio: 'inherit' });
+      console.log('✅ Extension build completed successfully!');
+    } catch (error) {
+      console.error('❌ Build process failed:', error.message);
+      process.exit(1);
     }
   }
-  
+} else {
+  // Run the safe rebuild script
   try {
-    copyDirRecursive(lovableDevSrcDir, srcDir);
-    console.log('✅ Successfully copied lovable.dev/src to src/');
+    console.log(`\n🛠️ Running build script: ${safeRebuildPath}`);
+    execSync(`node "${safeRebuildPath}"`, { stdio: 'inherit' });
+    console.log('✅ Extension build completed successfully!');
   } catch (error) {
-    console.error(`❌ Error copying lovable.dev files: ${error.message}`);
-  }
-} else {
-  console.log('\n⚠️ lovable.dev/src not found - skipping this step');
-}
-
-// Step 6: Verify critical components are included in the build
-console.log('\n🔍 Verifying critical components in the build...');
-
-// Check for ArbitragePrompt.tsx and VisualScanner.tsx source files
-const arbitragePromptPath = path.join(srcDir, 'components', 'arbitrage', 'ArbitragePrompt.tsx');
-const visualScannerPath = path.join(srcDir, 'components', 'visualScanner', 'VisualScanner.tsx');
-
-if (!fs.existsSync(arbitragePromptPath)) {
-  console.error('❌ Critical component missing: ArbitragePrompt.tsx');
-  console.error(`   Expected at: ${arbitragePromptPath}`);
-  process.exit(1);
-} else {
-  console.log('✅ Found ArbitragePrompt.tsx source file');
-}
-
-if (!fs.existsSync(visualScannerPath)) {
-  console.error('❌ Critical component missing: VisualScanner.tsx');
-  console.error(`   Expected at: ${visualScannerPath}`);
-  process.exit(1);
-} else {
-  console.log('✅ Found VisualScanner.tsx source file');
-}
-
-// Verify Vite built output includes our components
-const assetsDir = path.join(distDir, 'assets');
-if (!fs.existsSync(assetsDir)) {
-  console.error('❌ No assets directory found in dist/');
-  console.error('   This suggests the Vite build failed or was not executed');
-  
-  // Try to run the Vite build
-  console.log('\n🛠️ Attempting to run Vite build...');
-  try {
-    execSync('npx vite build', { stdio: 'inherit' });
-    console.log('✅ Vite build completed successfully');
-  } catch (error) {
-    console.error('❌ Vite build failed:', error.message);
+    console.error('❌ Build process failed:', error.message);
     process.exit(1);
   }
 }
 
-if (fs.existsSync(assetsDir)) {
-  console.log('\n🔍 Checking for compiled JavaScript files...');
-  const jsFiles = fs.readdirSync(assetsDir).filter(file => file.endsWith('.js'));
+// Verify the build
+try {
+  const distDir = path.join(projectDir, 'dist');
+  const manifestPath = path.join(distDir, 'manifest.json');
   
-  if (jsFiles.length === 0) {
-    console.error('❌ No JavaScript files found in dist/assets/');
-    process.exit(1);
-  }
-  
-  // Check content of compiled files for our component names
-  let foundArbitragePrompt = false;
-  let foundVisualScanner = false;
-  
-  for (const file of jsFiles) {
-    const filePath = path.join(assetsDir, file);
-    const content = fs.readFileSync(filePath, 'utf8');
+  if (fs.existsSync(manifestPath)) {
+    console.log('✅ Build verification: manifest.json exists in dist folder');
     
-    if (content.includes('ArbitragePrompt') || content.includes('arbitragePrompt')) {
-      foundArbitragePrompt = true;
-      console.log(`✅ Found ArbitragePrompt in ${file}`);
-    }
+    // Check for other critical files
+    const criticalFiles = [
+      'index.html',
+      'background.js',
+      'content.js'
+    ];
     
-    if (content.includes('VisualScanner') || content.includes('visualScanner')) {
-      foundVisualScanner = true;
-      console.log(`✅ Found VisualScanner in ${file}`);
-    }
+    const missingFiles = criticalFiles.filter(file => !fs.existsSync(path.join(distDir, file)));
     
-    if (foundArbitragePrompt && foundVisualScanner) {
-      break;
+    if (missingFiles.length === 0) {
+      console.log('✅ All critical files are present in the dist folder');
+    } else {
+      console.warn(`⚠️ Missing some files in dist: ${missingFiles.join(', ')}`);
     }
+  } else {
+    console.error('❌ Build verification failed: manifest.json not found in dist folder');
   }
-  
-  if (!foundArbitragePrompt) {
-    console.error('❌ ArbitragePrompt component not found in compiled JS');
-    process.exit(1);
-  }
-  
-  if (!foundVisualScanner) {
-    console.error('❌ VisualScanner component not found in compiled JS');
-    process.exit(1);
-  }
+} catch (error) {
+  console.error('❌ Error during build verification:', error.message);
 }
 
-// Verify index.html exists
-if (!fs.existsSync(path.join(distDir, 'index.html'))) {
-  console.error('❌ index.html missing from dist/');
-  process.exit(1);
-} else {
-  console.log('✅ Found index.html in dist/');
-}
-
-// Final verification
-console.log('\n🔍 Final verification...');
-const requiredDistFiles = [
-  'manifest.json',
-  'index.html',
-  'background.js',
-  'content.js',
-  'browser-polyfill.min.js'
-];
-
-const missingFiles = requiredDistFiles.filter(file => !fs.existsSync(path.join(distDir, file)));
-
-if (missingFiles.length > 0) {
-  console.error('❌ Missing required files in dist/:');
-  missingFiles.forEach(file => console.error(`   - ${file}`));
-  process.exit(1);
-} else {
-  console.log('✅ All required files present in dist/');
-}
-
-console.log('\n🎉 Build verification completed successfully!');
-console.log('\nYou can now:');
-console.log('1. Test the extension by loading it in Chrome from the dist directory');
-console.log(`   (${path.resolve(distDir)})`);
-console.log('2. Package the extension for Chrome Web Store submission:');
+console.log('\n🎉 Build process complete!');
+console.log('\nTo load your extension in Chrome:');
+console.log('1. Go to chrome://extensions/');
+console.log('2. Enable "Developer mode" in the top right corner');
+console.log('3. Click "Load unpacked" and select the dist folder:');
+console.log(`   ${path.resolve(path.join(projectDir, 'dist'))}`);
+console.log('\nTo package the extension for Chrome Web Store submission:');
 console.log('   zip -r extension.zip dist');

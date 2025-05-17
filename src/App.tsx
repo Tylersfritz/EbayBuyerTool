@@ -1,5 +1,5 @@
 
-import * as React from 'react';
+import React from 'react';
 import './App.css';
 import ExtensionPopupWrapper from './components/ExtensionPopupWrapper';
 // Import the critical components directly to ensure they're included in the build
