@@ -1,0 +1,30 @@
+/* src/components/arbitrage/ArbitragePrompt.css */
+.arbitrage-prompt {
+  max-width: 700px;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+button, select {
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+button:hover, select:hover {
+  transform: translateY(-1px);
+}
+
+img {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+select {
+  min-width: 180px;
+}
+
+button.bg-red-500 {
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}

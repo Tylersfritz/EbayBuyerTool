@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -6,33 +5,33 @@ import { componentTagger } from "lovable-tagger";
 import fs from 'fs';
 
 export default defineConfig(({ mode }) => {
-  console.log('🚀 Starting Vite config with mode:', mode);
-  console.log('📂 Current working directory:', process.cwd());
-  
+  console.log('≡ƒÜÇ Starting Vite config with mode:', mode);
+  console.log('≡ƒôé Current working directory:', process.cwd());
+
   // Create public directory if it doesn't exist
   if (!fs.existsSync('./public')) {
     fs.mkdirSync('./public');
-    console.log('✅ Created missing public directory');
+    console.log('Γ£à Created missing public directory');
   } else {
-    console.log('✅ Public directory exists');
+    console.log('Γ£à Public directory exists');
   }
 
   // Handle browser polyfill copy without modifying package.json
   const browserPolyfillPath = path.resolve(
     './node_modules/webextension-polyfill/dist/browser-polyfill.min.js'
   );
-  
+
   if (fs.existsSync(browserPolyfillPath)) {
     // Only copy if the destination doesn't exist
     const destPath = './public/browser-polyfill.min.js';
     if (!fs.existsSync(destPath)) {
       fs.copyFileSync(browserPolyfillPath, destPath);
-      console.log('✅ Copied browser-polyfill.min.js to public folder');
+      console.log('Γ£à Copied browser-polyfill.min.js to public folder');
     } else {
-      console.log('✅ browser-polyfill.min.js already exists in public folder');
+      console.log('Γ£à browser-polyfill.min.js already exists in public folder');
     }
   } else {
-    console.warn('⚠️ Could not find browser-polyfill.min.js in node_modules');
+    console.warn('ΓÜá∩╕Å Could not find browser-polyfill.min.js in node_modules');
   }
 
   return {
@@ -43,55 +42,55 @@ export default defineConfig(({ mode }) => {
       {
         name: 'copy-extension-files-early',
         buildStart() {
-          console.log('🚀 Copying critical extension files early in the build process...');
-          
+          console.log('≡ƒÜÇ Copying critical extension files early in the build process...');
+
           // Enhanced manifest debugging
-          console.log('🔍 PUBLIC DIRECTORY CONTENTS:');
+          console.log('≡ƒöì PUBLIC DIRECTORY CONTENTS:');
           try {
             const files = fs.readdirSync('./public');
             files.forEach(file => {
               try {
                 const stats = fs.statSync(path.join('./public', file));
                 console.log(`   - ${file} (${stats.size} bytes)`);
-              } catch (err: any) {
+              } catch (err) {
                 console.log(`   - ${file} (error getting size: ${err.message})`);
               }
             });
-          } catch (err: any) {
-            console.error('❌ Error reading public directory:', err.message);
+          } catch (err) {
+            console.error('Γ¥î Error reading public directory:', err.message);
           }
-          
+
           // Debug logs to check if manifest.json exists
-          console.log('🔍 Checking for public/manifest.json at:', path.resolve('./public/manifest.json'));
-          console.log('🔍 Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
-          
+          console.log('≡ƒöì Checking for public/manifest.json at:', path.resolve('./public/manifest.json'));
+          console.log('≡ƒöì Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
+
           // Check the content of manifest.json if it exists
           if (fs.existsSync('./public/manifest.json')) {
             try {
               const manifestContent = fs.readFileSync('./public/manifest.json', 'utf8');
-              console.log('📝 First few characters of manifest.json:', manifestContent.substring(0, 50) + '...');
-              console.log('📊 manifest.json size:', manifestContent.length, 'bytes');
-              
+              console.log('≡ƒô¥ First few characters of manifest.json:', manifestContent.substring(0, 50) + '...');
+              console.log('≡ƒôè manifest.json size:', manifestContent.length, 'bytes');
+
               // Validate JSON format
               try {
                 JSON.parse(manifestContent);
-                console.log('✅ manifest.json is valid JSON');
-              } catch (jsonError: any) {
-                console.error('❌ manifest.json is NOT valid JSON:', jsonError.message);
+                console.log('Γ£à manifest.json is valid JSON');
+              } catch (jsonError) {
+                console.error('Γ¥î manifest.json is NOT valid JSON:', jsonError.message);
               }
-            } catch (err: any) {
-              console.error('❌ Error reading manifest.json:', err.message);
+            } catch (err) {
+              console.error('Γ¥î Error reading manifest.json:', err.message);
             }
           } else {
-            console.error('❌ CRITICAL ERROR: public/manifest.json NOT FOUND!');
+            console.error('Γ¥î CRITICAL ERROR: public/manifest.json NOT FOUND!');
           }
-          
+
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
-            console.log('✅ Created dist directory');
+            console.log('Γ£à Created dist directory');
           }
-          
+
           // Critical files that must be copied early
           const criticalFiles = [
             { src: './public/manifest.json', dest: './dist/manifest.json' },
@@ -100,38 +99,38 @@ export default defineConfig(({ mode }) => {
             { src: './public/icon-128.png', dest: './dist/icon-128.png' },
             { src: './public/browser-polyfill.min.js', dest: './dist/browser-polyfill.min.js' }
           ];
-          
+
           for (const { src, dest } of criticalFiles) {
             try {
               if (fs.existsSync(src)) {
                 fs.copyFileSync(src, dest);
-                console.log(`✅ Early copy: ${path.basename(src)} -> dist`);
+                console.log(`Γ£à Early copy: ${path.basename(src)} -> dist`);
               } else {
-                console.error(`❌ CRITICAL ERROR: ${src} not found!`);
+                console.error(`Γ¥î CRITICAL ERROR: ${src} not found!`);
               }
-            } catch (err: any) {
-              console.error(`❌ Error copying ${src}:`, err.message);
+            } catch (err) {
+              console.error(`Γ¥î Error copying ${src}:`, err.message);
             }
           }
         },
         // Also use closeBundle to ensure files are copied at the end of build
         closeBundle() {
           // Debug logs for closeBundle
-          console.log('🔍 Final check for public/manifest.json at:', path.resolve('./public/manifest.json'));
-          console.log('🔍 Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
-          
+          console.log('≡ƒöì Final check for public/manifest.json at:', path.resolve('./public/manifest.json'));
+          console.log('≡ƒöì Does public/manifest.json exist?', fs.existsSync('./public/manifest.json'));
+
           if (fs.existsSync('./public/manifest.json')) {
-            console.log('📁 Manifest file stats:', fs.statSync('./public/manifest.json'));
+            console.log('≡ƒôü Manifest file stats:', fs.statSync('./public/manifest.json'));
           }
-          
+
           // Ensure dist directory exists
           if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist', { recursive: true });
           }
-          
+
           // Copy all extension files
           console.log('Copying extension files to dist directory...');
-          
+
           const filesToCopy = [
             { src: './public/manifest.json', dest: './dist/manifest.json', critical: true },
             { src: './public/manifest.edge.json', dest: './dist/manifest.edge.json', critical: false },
@@ -149,63 +148,64 @@ export default defineConfig(({ mode }) => {
             { src: './public/background.js', dest: './dist/background.js', critical: true },
             { src: './public/mercari-content.js', dest: './dist/mercari-content.js', critical: true },
           ];
-          
+
           // Copy each file if it exists
           let criticalError = false;
           for (const { src, dest, critical } of filesToCopy) {
             try {
               if (fs.existsSync(src)) {
                 fs.copyFileSync(src, dest);
-                console.log(`✅ Copied ${path.basename(src)} to dist folder`);
+                console.log(`Γ£à Copied ${path.basename(src)} to dist folder`);
               } else {
                 const message = `Could not find ${src}`;
                 if (critical) {
-                  console.error(`❌ CRITICAL: ${message} - Extension will not work!`);
+                  console.error(`Γ¥î CRITICAL: ${message} - Extension will not work!`);
                   criticalError = true;
                 } else {
-                  console.warn(`⚠️ ${message}`);
+                  console.warn(`ΓÜá∩╕Å ${message}`);
                 }
               }
-            } catch (err: any) {
+            } catch (err) {
               console.error(`Error copying ${src}:`, err.message);
               if (critical) criticalError = true;
             }
           }
-          
+
           // Verify manifest.json was properly copied to dist
           if (fs.existsSync('./dist/manifest.json')) {
-            console.log('✅ Verified manifest.json exists in dist folder');
+            console.log('Γ£à Verified manifest.json exists in dist folder');
             try {
               const manifestSize = fs.statSync('./dist/manifest.json').size;
-              console.log(`📊 manifest.json in dist is ${manifestSize} bytes`);
-              
+              console.log(`≡ƒôè manifest.json in dist is ${manifestSize} bytes`);
+
               // Validate the copied manifest
               try {
                 const manifestContent = fs.readFileSync('./dist/manifest.json', 'utf8');
                 JSON.parse(manifestContent);
-                console.log('✅ manifest.json in dist is valid JSON');
-              } catch (jsonError: any) {
-                console.error('❌ manifest.json in dist is NOT valid JSON:', jsonError.message);
+                console.log('Γ£à manifest.json in dist is valid JSON');
+              } catch (jsonError) {
+                console.error('Γ¥î manifest.json in dist is NOT valid JSON:', jsonError.message);
               }
-            } catch (err: any) {
-              console.error('❌ Error verifying manifest.json in dist:', err.message);
+            } catch (err) {
+              console.error('Γ¥î Error verifying manifest.json in dist:', err.message);
             }
           } else {
-            console.error('❌ CRITICAL: manifest.json NOT found in dist folder!');
+            console.error('Γ¥î CRITICAL: manifest.json NOT found in dist folder!');
             criticalError = true;
           }
-          
+
           if (criticalError) {
-            console.error('❌ CRITICAL ERRORS detected! Extension may not load properly.');
+            console.error('Γ¥î CRITICAL ERRORS detected! Extension may not load properly.');
           } else {
-            console.log('✅ All critical extension files copied successfully.');
+            console.log('Γ£à All critical extension files copied successfully.');
           }
         }
       }
     ].filter(Boolean),
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src')
+        '@': path.resolve(__dirname, './src'),
+        '@lovable': path.resolve(__dirname, 'lovable.dev/src'),
       }
     },
     server: {
@@ -217,6 +217,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
+      assetsInlineLimit: 0,
+      copyPublicDir: true,
+      minify: false, // Disable minification to preserve identifiers
       rollupOptions: {
         input: {
           index: path.resolve(__dirname, 'index.html')
@@ -224,12 +227,22 @@ export default defineConfig(({ mode }) => {
         output: {
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]'
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            arbitrage: [
+              './src/components/arbitrage/ArbitragePrompt',
+              './src/components/visualScanner/VisualScanner'
+            ],
+          },
+          // Log chunk contents for debugging
+          chunkFileNames: (chunkInfo) => {
+            console.log('Chunk:', chunkInfo.name, 'Modules:', chunkInfo.moduleIds);
+            return 'assets/[name]-[hash].js';
+          }
         },
         external: ['webextension-polyfill']
       },
-      assetsInlineLimit: 0,
-      copyPublicDir: true
     }
   };
 });

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -13,6 +12,7 @@ import PremiumOnlyLock from '../premium/PremiumOnlyLock';
 import PremiumVisualScanner from '../visualScanner/PremiumVisualScanner';
 import { ScanResult } from '../visualScanner/VisualScanner';
 import { toast } from '@/components/ui/sonner';
+import ArbitragePrompt from '../arbitrage/ArbitragePrompt';
 
 interface ArbitrageProps {
   isPremium: boolean;
@@ -161,6 +161,15 @@ const Arbitrage: React.FC<ArbitrageProps> = ({ isPremium }) => {
             hasSearched={hasSearched}
             isPremium={isPremium}
           />
+          
+          <div className="lovable-components mt-4">
+            <ArbitragePrompt
+              onScan={() => console.log('Scan clicked')}
+              onSearch={() => console.log('Search clicked')}
+              onExploreMovers={(category) => console.log('Explore Movers:', category)}
+              onSetAlert={() => console.log('Set Alert clicked')}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="visual" className="space-y-4">
