@@ -47,7 +47,15 @@ export default defineConfig(({ mode }) => {
     // Explicitly set public directory
     publicDir: 'public',
     plugins: [
-      react(),
+      // Use explicit configuration for React plugin to avoid duplicating React
+      react({
+        jsxRuntime: 'classic', // Use classic JSX transform which helps avoid React duplicate instances
+        babel: {
+          // Configure babel to make sure React is optimally bundled
+          plugins: [],
+          babelrc: false
+        }
+      }),
       mode === 'development' && componentTagger(),
       {
         name: 'copy-extension-files-early',
@@ -223,7 +231,9 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         // Add alias for lovable.dev/src if it exists
         ...(hasLovableDev ? { '@lovable': path.resolve(__dirname, './lovable.dev/src') } : {})
-      }
+      },
+      // Ensure React is deduplicated by explicitly defining where to resolve it
+      dedupe: ['react', 'react-dom']
     },
     server: {
       port: 8080,
@@ -231,6 +241,8 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       exclude: ['webextension-polyfill'],
+      // Include React to ensure it's optimized properly
+      include: ['react', 'react-dom']
     },
     build: {
       outDir: 'dist',
@@ -242,8 +254,11 @@ export default defineConfig(({ mode }) => {
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash].[ext]',
-          // Add manualChunks configuration to ensure critical components are included
+          // Ensure React is bundled correctly for each chunk
           manualChunks: {
+            // Create a vendor chunk for React to ensure it's only included once
+            vendor: ['react', 'react-dom'],
+            // Critical components get their own chunks
             arbitragePrompt: ['./src/components/arbitrage/ArbitragePrompt.tsx'],
             visualScanner: ['./src/components/visualScanner/VisualScanner.tsx'],
             // Group common UI components
