@@ -39,8 +39,47 @@ if (fs.existsSync(viteCacheDir)) {
   }
 }
 
-// Step 3: Remove dist directory
-console.log('\n3️⃣ Removing dist directory...');
+// Step 3: Check for React imports in component files
+console.log('\n3️⃣ Checking React imports in component files...');
+function checkReactImports(dir, fileExtensions = ['.tsx', '.jsx']) {
+  const files = fs.readdirSync(dir);
+  
+  files.forEach(file => {
+    const filePath = path.join(dir, file);
+    const stats = fs.statSync(filePath);
+    
+    if (stats.isDirectory()) {
+      checkReactImports(filePath, fileExtensions);
+    } else if (fileExtensions.some(ext => file.endsWith(ext))) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      
+      // Check if file likely uses React JSX but doesn't import React
+      if ((content.includes('return (') || content.includes('return (')) && 
+          content.includes('<') && content.includes('/>') &&
+          !content.includes('import React')) {
+        console.log(`⚠️ Possible missing React import in: ${filePath}`);
+        
+        // Add React import if it's missing
+        if (!content.trim().startsWith('import React')) {
+          const newContent = `import React from 'react';\n${content}`;
+          fs.writeFileSync(filePath, newContent);
+          console.log(`✅ Added React import to: ${filePath}`);
+        }
+      }
+    }
+  });
+}
+
+try {
+  checkReactImports(path.join(process.cwd(), 'src'));
+  console.log('✅ React imports check completed');
+} catch (error) {
+  console.error(`❌ Error checking React imports: ${error.message}`);
+  console.log('Continuing with build process...');
+}
+
+// Step 4: Remove dist directory
+console.log('\n4️⃣ Removing dist directory...');
 const distDir = path.join(process.cwd(), 'dist');
 if (fs.existsSync(distDir)) {
   try {
@@ -58,8 +97,8 @@ if (fs.existsSync(distDir)) {
   console.log('✅ Dist directory does not exist, nothing to remove');
 }
 
-// Step 4: Run unified build extension script
-console.log('\n4️⃣ Running unified build extension script...');
+// Step 5: Run unified build extension script
+console.log('\n5️⃣ Running unified build extension script...');
 try {
   execSync('node unified-build-extension.cjs', { stdio: 'inherit' });
   console.log('✅ Build completed successfully');
