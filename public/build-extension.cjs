@@ -39,7 +39,13 @@ const criticalFiles = [
   { src: path.join(__dirname, 'browser-polyfill.min.js'), dest: path.join(distDir, 'browser-polyfill.min.js') },
   { src: path.join(__dirname, 'content.js'), dest: path.join(distDir, 'content.js') },
   { src: path.join(__dirname, 'background.js'), dest: path.join(distDir, 'background.js') },
-  { src: path.join(__dirname, 'mercari-content.js'), dest: path.join(distDir, 'mercari-content.js') }
+  { src: path.join(__dirname, 'mercari-content.js'), dest: path.join(distDir, 'mercari-content.js') },
+  // Add web accessible resources here
+  { src: path.join(__dirname, 'price-check.png'), dest: path.join(distDir, 'price-check.png') },
+  { src: path.join(__dirname, 'negotiation-assistance.png'), dest: path.join(distDir, 'negotiation-assistance.png') },
+  { src: path.join(__dirname, 'auction-bidedge.png'), dest: path.join(distDir, 'auction-bidedge.png') },
+  { src: path.join(__dirname, 'auction-sniping.png'), dest: path.join(distDir, 'auction-sniping.png') },
+  { src: path.join(__dirname, 'arbitrage-search.png'), dest: path.join(distDir, 'arbitrage-search.png') }
 ];
 
 // Optional files to include if they exist
@@ -184,6 +190,25 @@ if (fs.existsSync(path.join(distDir, 'manifest.json'))) {
         criticalErrors = true;
       }
     }
+    
+    // Check web_accessible_resources
+    if (manifest.web_accessible_resources && Array.isArray(manifest.web_accessible_resources)) {
+      console.log('\n🔍 Checking web accessible resources:');
+      
+      for (const resourceEntry of manifest.web_accessible_resources) {
+        if (resourceEntry.resources && Array.isArray(resourceEntry.resources)) {
+          for (const resourcePath of resourceEntry.resources) {
+            const fullPath = path.join(distDir, resourcePath);
+            if (fs.existsSync(fullPath)) {
+              console.log(`✅ Web accessible resource: ${resourcePath} exists`);
+            } else {
+              console.error(`❌ Web accessible resource: ${resourcePath} referenced in manifest but file not found!`);
+              criticalErrors = true;
+            }
+          }
+        }
+      }
+    }
   } catch (error) {
     console.error('❌ Error reading or parsing manifest.json:', error.message);
     criticalErrors = true;
@@ -207,7 +232,7 @@ if (fs.existsSync(indexHtmlPath)) {
       console.warn('⚠️ index.html does not contain reference to browser-polyfill.min.js');
     }
     
-    // Check for base href tag (should be removed)
+    // Check for base href tag that could cause issues
     if (htmlContent.includes('<base href="/">')) {
       console.error('❌ index.html contains <base href="/"> tag which can cause path issues in extensions!');
       

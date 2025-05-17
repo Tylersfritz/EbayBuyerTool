@@ -1,98 +1,58 @@
 
 # Building the DealHaven Extension
 
-This document provides detailed instructions for building the DealHaven Chrome extension.
+This document explains how to build the extension without modifying package.json.
 
-## Quick Build Instructions
+## Prerequisites
 
-### One-Step Build Process (Recommended)
+- Node.js 18 or later
+- NPM 7 or later
 
-Simply run the full build script:
+## Building the Extension
+
+To build the extension, run:
+
+```bash
+node unified-build.js
 ```
-node public/run-build-extension.js
+
+If you encounter any issues with the main build script, try the direct extension build:
+
+```bash
+node unified-build-extension.cjs
 ```
 
-This script will:
-1. Prepare all required files using fix-manifest.js
-2. Build the React application using Vite
-3. Copy all extension files to the dist directory
-4. Validate the build to ensure all required files are present
+These scripts will:
 
-The built extension will be in the `dist` directory.
-
-### Manual Build Process (Step by Step)
-
-If you prefer to run each step individually:
-
-1. First, ensure all required files exist:
-   ```
-   node public/fix-manifest.js
-   ```
-
-2. Then build using Vite:
-   ```
-   npx vite build
-   ```
-
-3. Copy all extension files to dist:
-   ```
-   node public/build-extension.js
-   ```
-
-4. Validate the build:
-   ```
-   node public/extension-validation.js
-   ```
-
-## Loading the Extension in Chrome
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in the top right corner)
-3. Click "Load unpacked" and select the `dist` directory
+1. Run the Vite build process
+2. Copy all necessary files from public/ to the dist directory
+3. Verify the presence of critical components (ArbitragePrompt and VisualScanner)
+4. Check for properly compiled JavaScript files in dist/assets/
 
 ## Troubleshooting
 
-If the extension doesn't load properly:
+If you encounter any issues:
 
-1. Check for errors in the Chrome Extensions page
-2. Run the validation script to see if any files are missing:
-   ```
-   node public/extension-validation.js
-   ```
+1. Clear the dist directory: `rm -rf dist`
+2. Clear npm cache: `npm cache clean --force`
+3. Clear Chrome extension cache: Navigate to chrome://extensions, toggle Developer Mode, and click "Update"
+4. Reinstall dependencies: `npm ci`
+5. Try the build again: `node unified-build.js`
 
-3. Common issues:
-   - Missing icon files
-   - Invalid manifest.json
-   - Missing content scripts or background scripts
-   - Path issues with resources in the manifest
+## Loading the Extension
 
-4. For file path issues:
-   - Make sure there's no `<base href="/">` tag in index.html
-   - Ensure all paths in manifest.json are relative to the extension root
-   - Check that all referenced files actually exist in the dist folder
+To load the extension in Chrome:
 
-## Icon Generation
+1. Go to chrome://extensions/
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `dist` directory
 
-If you need to generate proper extension icons:
+## Packaging the Extension
 
-1. Use the Extension Icon Generator in the deployment dashboard
-2. Or manually create icon files in the following sizes:
-   - 16x16: icon-16.png
-   - 48x48: icon-48.png
-   - 128x128: icon-128.png
+To package the extension for distribution:
 
-## Build Verification
+1. Build the extension: `node unified-build.js`
+2. Zip the dist directory: `zip -r extension.zip dist`
 
-After building, verify that these files are present in the `dist` directory:
-- `manifest.json`
-- `index.html`
-- Icon files: `icon-16.png`, `icon-48.png`, `icon-128.png`
-- Extension scripts: `content.js`, `background.js`, `mercari-content.js`
-- Browser polyfill: `browser-polyfill.min.js`
-
-You can run the validation script to check for all required files:
-```
-node public/extension-validation.js
-```
-
-Happy building!
+The extension.zip file can then be uploaded to the Chrome Web Store.

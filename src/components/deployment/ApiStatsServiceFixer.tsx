@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 import { getApiStats, ApiStatsParams } from '@/api/apiStatsService';
-import { getApiConfig, saveApiConfig } from '@/api/apiConfig';
+import { getApiConfig, saveApiConfig, getFullApiUrl } from '@/api/apiConfig';
 import { isExtensionEnvironment } from '@/utils/browserUtils';
 
 const ApiStatsServiceFixer: React.FC = () => {
@@ -79,9 +79,9 @@ const ApiStatsServiceFixer: React.FC = () => {
         await saveApiConfig({
           baseUrl: baseUrl,
           endpoints: {
-            priceCheck: '/api/price-check',
-            health: '/api/health',
-            stats: '/api/api-stats'
+            priceCheck: '/price-check',
+            health: '/health',
+            stats: '/api-stats'
           }
         });
         
@@ -98,16 +98,16 @@ const ApiStatsServiceFixer: React.FC = () => {
   
   // Reset to default API settings
   const resetApiSettings = async () => {
-    const defaultUrl = 'https://ebay-buyer-tool-zp52.vercel.app';
+    const defaultUrl = 'https://ebay-buyer-tool-zp52.vercel.app/api';
     setBaseUrl(defaultUrl);
     
     if (isExtensionEnvironment()) {
       await saveApiConfig({
         baseUrl: defaultUrl,
         endpoints: {
-          priceCheck: '/api/price-check',
-          health: '/api/health',
-          stats: '/api/api-stats'
+          priceCheck: '/price-check',
+          health: '/health',
+          stats: '/api-stats'
         }
       });
       toast.success('API configuration reset to defaults');

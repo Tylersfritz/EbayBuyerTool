@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, AlertCircle, AlertTriangle, ArrowRight, RefreshCcw } from "lucide-react";
+import { CheckCircle, AlertCircle, AlertTriangle, ArrowRight, RefreshCcw, Code } from "lucide-react";
 import { useApiHealth } from '@/context/ApiHealthContext';
 import { getApiConfig } from '@/api/apiConfig';
 import { isExtensionEnvironment } from '@/utils/browserUtils';
@@ -17,6 +16,30 @@ interface CheckResult {
   status: 'success' | 'warning' | 'error' | 'pending';
   message: string;
   details?: string;
+  debug?: Record<string, any>; // Properly type the debug property
+}
+
+// Define interface for the debug object to fix TypeScript errors
+interface ContentScriptDebugInfo {
+  attemptMade?: boolean;
+  lastError?: string;
+  tabsFound?: number;
+  noTabsOrTabId?: boolean;
+  activeTabId?: number;
+  activeTabUrl?: string;
+  isEbayPage?: boolean;
+  messageError?: string;
+  response?: any;
+  error?: string;
+  chromeTabsUnavailable?: boolean;
+  [key: string]: any; // Allow additional properties
+}
+
+// Define Chrome Tab interface to handle URL property correctly
+interface ChromeTab {
+  id?: number;
+  url?: string;
+  [key: string]: any;
 }
 
 const DeploymentReadinessChecker: React.FC = () => {
@@ -24,6 +47,7 @@ const DeploymentReadinessChecker: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [apiUrl, setApiUrl] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
   const { healthState, checkHealth } = useApiHealth();
   
   useEffect(() => {
@@ -165,42 +189,64 @@ const DeploymentReadinessChecker: React.FC = () => {
     if (isExtensionEnvironment()) {
       try {
         let contentScriptResult = false;
+        let debugInfo: ContentScriptDebugInfo = {}; // Use the typed interface here
         
         // Attempt to communicate with tabs to test content script
         if (chrome.tabs) {
           try {
+            debugInfo.attemptMade = true;
             await new Promise<void>((resolve, reject) => {
-              chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              chrome.tabs.query({ active: true, currentWindow: true }, (tabs: ChromeTab[]) => {
                 if (chrome.runtime.lastError) {
+                  debugInfo.lastError = chrome.runtime.lastError.message || '';
                   reject(new Error(chrome.runtime.lastError.message));
                   return;
                 }
                 
+                debugInfo.tabsFound = tabs.length;
                 if (tabs.length === 0 || !tabs[0].id) {
+                  debugInfo.noTabsOrTabId = true;
                   resolve();
                   return;
                 }
                 
+                const activeTab = tabs[0];
+                debugInfo.activeTabId = activeTab.id;
+                debugInfo.activeTabUrl = activeTab.url; // Now properly typed
+                
+                // Check if we're on an eBay page
+                const isEbayPage = activeTab.url && activeTab.url.includes('ebay.com/itm/');
+                debugInfo.isEbayPage = isEbayPage;
+                
                 // Try to send a test message to the content script
-                chrome.tabs.sendMessage(
-                  tabs[0].id,
-                  { action: "testModeGetListingInfo" },
-                  (response) => {
-                    if (chrome.runtime.lastError) {
-                      // This may not be an error if we're not on a valid page
+                if (activeTab.id) {
+                  chrome.tabs.sendMessage(
+                    activeTab.id,
+                    { action: "testModeGetListingInfo" },
+                    (response) => {
+                      if (chrome.runtime.lastError) {
+                        debugInfo.messageError = chrome.runtime.lastError.message || '';
+                        // This may not be an error if we're not on a valid page
+                        resolve();
+                        return;
+                      }
+                      
+                      debugInfo.response = response;
+                      contentScriptResult = !!response;
                       resolve();
-                      return;
                     }
-                    
-                    contentScriptResult = !!response;
-                    resolve();
-                  }
-                );
+                  );
+                } else {
+                  resolve();
+                }
               });
             });
           } catch (error) {
+            debugInfo.error = error instanceof Error ? error.message : String(error);
             console.error('Error testing content script access:', error);
           }
+        } else {
+          debugInfo.chromeTabsUnavailable = true;
         }
         
         updateCheck('Content Script Access', {
@@ -210,20 +256,23 @@ const DeploymentReadinessChecker: React.FC = () => {
             : 'Content script may not be accessible',
           details: contentScriptResult
             ? 'Communication with content script works'
-            : 'Could not verify content script access. This is expected if not on an eBay listing page.'
+            : 'Could not verify content script access. This is expected if not on an eBay listing page.',
+          debug: debugInfo
         });
       } catch (error) {
         updateCheck('Content Script Access', {
           status: 'error',
           message: 'Error testing content script',
-          details: error instanceof Error ? error.message : 'Unknown error'
+          details: error instanceof Error ? error.message : 'Unknown error',
+          debug: { error: error instanceof Error ? error.stack : String(error) }
         });
       }
     } else {
       updateCheck('Content Script Access', {
         status: 'warning',
         message: 'Cannot test content script in web environment',
-        details: 'Content script testing requires extension environment'
+        details: 'Content script testing requires extension environment',
+        debug: { webEnvironment: true }
       });
     }
     
@@ -282,7 +331,7 @@ const DeploymentReadinessChecker: React.FC = () => {
     
     await new Promise(resolve => setTimeout(resolve, 300));
   };
-  
+
   // Check 6: Resource Optimization
   const checkResourceOptimization = async () => {
     // Simulate a resource optimization check
@@ -326,10 +375,23 @@ const DeploymentReadinessChecker: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Extension Deployment Readiness</CardTitle>
-        <CardDescription>
-          Check if your extension is ready for Chrome Web Store submission
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Extension Deployment Readiness</CardTitle>
+            <CardDescription>
+              Check if your extension is ready for Chrome Web Store submission
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setDebugMode(!debugMode)}
+            className="flex items-center gap-1"
+          >
+            <Code className="h-4 w-4" />
+            {debugMode ? "Hide Debug" : "Debug Mode"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {progress > 0 && (
@@ -356,6 +418,11 @@ const DeploymentReadinessChecker: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{check.message}</p>
                 {check.details && (
                   <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                )}
+                {debugMode && check.debug && (
+                  <pre className="text-xs bg-slate-50 p-2 mt-2 rounded overflow-auto max-h-40">
+                    {JSON.stringify(check.debug, null, 2)}
+                  </pre>
                 )}
               </div>
             </div>

@@ -1,5 +1,6 @@
 
 // Enhanced manifest fixer script with improved validation and file generation
+// Avoids modifying package.json
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

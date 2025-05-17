@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import * as React from 'react';
 import VisualScanner, { ScanResult } from './VisualScanner';
 import PremiumOnlyLock from '../premium/PremiumOnlyLock';
 
@@ -24,10 +24,11 @@ const PremiumVisualScanner: React.FC<PremiumVisualScannerProps> = ({
         title="Visual Scanner"
         description="Scan product images to automatically find price information and market value."
         showPreview={true}
+        onClose={onClose}
       >
         <VisualScanner 
           onScanComplete={() => {}} 
-          onCancel={() => {}}
+          onCancel={onClose}
           isPremium={true} 
         />
       </PremiumOnlyLock>

@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "description": "API for the eBay Buyer Tool",
   "main": "index.js",
+  "scripts": {
+    "build": "node ../build-wrapper.cjs",
+    "fix-manifest": "node ../public/fix-manifest.js",
+    "create-images": "node ../public/create-web-resource-images.js"
+  },
   "dependencies": {
     "node-fetch": "^2.7.0",
     "node-cache": "^5.1.2"

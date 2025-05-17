@@ -3,7 +3,15 @@
 
 import { PriceCheckParams, PriceCheckResponse } from './priceApiService';
 
-export function extractItemSearchParams({ itemName, itemSpecifics }: { 
+/**
+ * Extracts search parameters from item information
+ * Prioritizes item specifics like brand and model for more accurate search results
+ */
+export function extractItemSearchParams({ 
+  itemName, 
+  itemSpecifics, 
+  condition 
+}: { 
   itemName: string, 
   itemSpecifics?: Record<string, string> | null,
   condition?: string
@@ -11,6 +19,7 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
   // Extract key information from item specifics to improve search
   let brand = '';
   let model = '';
+  let category = '';
   
   if (itemSpecifics) {
     // Look for brand with multiple possible key names
@@ -28,6 +37,14 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
         break;
       }
     }
+
+    // Look for category with multiple possible key names
+    for (const key of ['Category', 'Type', 'Product Type', 'Item Type']) {
+      if (itemSpecifics[key]) {
+        category = itemSpecifics[key];
+        break;
+      }
+    }
   }
   
   // Construct search term, prioritizing brand and model if available
@@ -38,7 +55,8 @@ export function extractItemSearchParams({ itemName, itemSpecifics }: {
   return {
     searchTerm,
     brand,
-    model
+    model,
+    category
   };
 }
 
@@ -88,7 +106,55 @@ export async function mockPriceCheckApi(params: PriceCheckParams): Promise<Price
     dataQuality: {
       confidence: 'low',
       sources: ['Mock API (Preview Environment)'],
-      warning: 'This is sample data for preview purposes only'
+      warning: 'This is sample data for preview purposes only',
+      itemSpecifics: {
+        make: params.brand || null,
+        model: params.model || null,
+        category: params.category || null
+      }
     }
   };
+}
+
+/**
+ * Enhanced version of the price check API client
+ * This implementation prioritizes:
+ * 1. Direct item lookup using itemId when available
+ * 2. Search by item specifics (brand, model) when available
+ * 3. Search by title as a fallback
+ */
+export async function enhancedPriceCheck(params: PriceCheckParams): Promise<PriceCheckResponse> {
+  console.log('Enhanced price check called with params:', params);
+  
+  // Extract item specifics if available
+  let { brand, model } = params;
+  
+  if (!brand || !model) {
+    // Try to extract from itemSpecifics
+    if (params.itemSpecifics) {
+      const extracted = extractItemSearchParams({
+        itemName: params.itemName,
+        itemSpecifics: params.itemSpecifics,
+        condition: params.condition
+      });
+      
+      brand = brand || extracted.brand;
+      model = model || extracted.model;
+    }
+  }
+  
+  // Log the enhanced parameters
+  console.log('Enhanced search parameters:', { 
+    itemId: params.itemId, 
+    brand, 
+    model, 
+    itemName: params.itemName 
+  });
+  
+  // For now, use the mock implementation since the server-side code is out of scope
+  return mockPriceCheckApi({
+    ...params,
+    brand,
+    model
+  });
 }

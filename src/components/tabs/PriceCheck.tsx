@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CurrentListingCard from "@/components/priceCheck/CurrentListingCard";
 import PriceAnalysisCard from "@/components/priceCheck/PriceAnalysisCard";
@@ -6,28 +7,28 @@ import PriceHistoryChart from "@/components/priceCheck/PriceHistoryChart";
 import ConditionValueAnalysis from "@/components/priceCheck/ConditionValueAnalysis";
 import ActionButtons from "@/components/priceCheck/ActionButtons";
 import EnhancedAffiliateButton from "@/components/priceCheck/EnhancedAffiliateButton";
-import { usePriceCheck } from "@/components/priceCheck/usePriceCheck";
+import BidEdgePromo from "@/components/priceCheck/BidEdgePromo";
+import ArbitrageAlertPromo from "@/components/priceCheck/ArbitrageAlertPromo";
+import { usePriceCheck } from "@/components/priceCheck/hooks/usePriceCheck";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { toast } from "@/components/ui/sonner";
 import { calculatePriceDifference } from "@/utils/pricing/pricingUtils";
-import { saveToStorage, getFromStorage } from "@/utils/storage/storageUtils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Share, Scan } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { usePriceSharedData } from "@/hooks/usePriceSharedData";
 import { mockPriceHistoryData, mockAuctionPriceHistoryData, mockConditionData } from "@/components/priceCheck/utils/mockData";
 import { useModeContext } from '@/context/ModeContext';
 import PremiumVisualScanner from "../visualScanner/PremiumVisualScanner";
 import { ScanResult } from "../visualScanner/VisualScanner";
+import PromotionAlert from "../priceCheck/PromotionAlert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Scan, Share } from "lucide-react";
 
 interface PriceCheckProps {
   isPremium: boolean;
+  onTabChange?: (tabName: string) => void; // New prop for tab navigation
 }
 
-const FREE_SEARCH_LIMIT = 10;
-
-const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
+const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium, onTabChange }) => {
   
   const {
     loading,
@@ -36,10 +37,10 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
     loadingListingInfo,
     handleCheckPrice,
     error,
-    testMode
+    testMode,
+    hasReachedLimit
   } = usePriceCheck(isPremium);
   
-  const [searchesRemaining, setSearchesRemaining] = useState<number>(FREE_SEARCH_LIMIT);
   const { savePriceData } = usePriceSharedData();
   const { isAuctionMode } = useModeContext();
   const [isVisualScannerOpen, setIsVisualScannerOpen] = useState(false);
@@ -54,38 +55,6 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
       });
     }
   }, [priceData, listingInfo, savePriceData]);
-  
-  useEffect(() => {
-    // Load the number of searches used
-    const loadSearchCount = async () => {
-      if (!isPremium) {
-        const searchCount = await getFromStorage<number>('priceCheckSearchCount') || 0;
-        setSearchesRemaining(Math.max(0, FREE_SEARCH_LIMIT - searchCount));
-      }
-    };
-    
-    loadSearchCount();
-  }, [isPremium]);
-  
-  // Override the handleCheckPrice function to track usage for free users
-  const handleCheckPriceWithLimit = async () => {
-    if (!isPremium && searchesRemaining <= 0) {
-      toast.error("You've reached your free search limit. Upgrade to Premium for unlimited searches.");
-      return;
-    }
-    
-    const result = await handleCheckPrice();
-    
-    // If search was successful and user is not premium, update the search count
-    if (!isPremium && result !== undefined) {
-      const currentCount = await getFromStorage<number>('priceCheckSearchCount') || 0;
-      const newCount = currentCount + 1;
-      await saveToStorage('priceCheckSearchCount', newCount);
-      setSearchesRemaining(Math.max(0, FREE_SEARCH_LIMIT - newCount));
-    }
-    
-    return result;
-  };
 
   // Handle scan completion
   const handleScanComplete = (scanResult: ScanResult) => {
@@ -137,37 +106,41 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
   const getTabContentClass = () => {
     return `flex-1 p-3 py-2 overflow-y-auto ${listingInfo.isAuction ? 'auction-tab-content' : 'fixed-price-tab-content'}`;
   };
+
+  // Navigate to other tabs
+  const handleNavigateToBidEdge = () => {
+    if (onTabChange) {
+      onTabChange("bidedge");
+      toast.info("Opening auction in BidEdge...");
+    }
+  };
+
+  const handleNavigateToArbitrage = () => {
+    if (onTabChange) {
+      onTabChange("arbitrage");
+      toast.info("Opening Arbitrage Finder...");
+    }
+  };
   
   return (
-    <div className="flex flex-col space-y-2">
-      {/* Free user search limit indicator */}
-      {!isPremium && (
-        <Alert variant="premium" className="mb-1 py-2">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              <AlertDescription className="text-xs">
-                Free version limited to {FREE_SEARCH_LIMIT} searches
-              </AlertDescription>
-            </div>
-            <Badge variant="premium" className="ml-2">
-              {searchesRemaining} left
-            </Badge>
+    <div className="flex flex-col space-y-1">
+      {/* Combine usage indicator and scanner button in one row */}
+      <div className="flex items-center justify-between mb-1">
+        {!isPremium && (
+          <div className="flex-grow mr-2">
+            <PromotionAlert isPremium={isPremium} displayInline={true} />
           </div>
-        </Alert>
-      )}
-
-      {/* Visual Scanner Button */}
-      <div className="flex justify-end mb-1">
+        )}
+        
         <Button
           size="sm"
           variant={isPremium ? "premium" : "outline"}
-          className="text-xs flex items-center"
+          className="text-xs flex items-center whitespace-nowrap"
           onClick={() => setIsVisualScannerOpen(true)}
         >
-          <Scan className="h-3.5 w-3.5 mr-1.5" />
+          <Scan className="h-3.5 w-3.5 mr-1" />
           Image Scanner
-          {!isPremium && <Badge variant="premium" className="ml-1.5 text-[0.6rem] h-4">PRO</Badge>}
+          {!isPremium && <Badge variant="premium" className="ml-1 text-[0.6rem] h-4">PRO</Badge>}
         </Button>
       </div>
 
@@ -185,31 +158,55 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
         loadingListingInfo={loadingListingInfo}
       />
       
-      {/* Premium Feature: Price History Chart */}
+      {/* Premium Feature: Price History Chart with reduced margin */}
       {isPremium && (
         <PriceHistoryChart
-          data={getMockHistoryData()} // Pass the appropriate mock data based on mode
+          data={getMockHistoryData()}
           loading={loading}
           isPremium={isPremium}
-          currentPrice={listingInfo.currentPrice || 0.01} // Ensure there's always a valid price
+          currentPrice={listingInfo.currentPrice || 0.01}
         />
       )}
       
-      {/* Price Analysis Card */}
+      {/* Price Analysis Card with reduced margin */}
       <PriceAnalysisCard
         loading={loading}
         priceData={priceData}
-        listingPrice={listingInfo.currentPrice || 0.01} // Ensure there's always a valid price
-        onCheckPrice={handleCheckPriceWithLimit}
+        listingPrice={listingInfo.currentPrice || 0.01}
+        onCheckPrice={handleCheckPrice}
         error={error}
         isAuction={listingInfo.isAuction}
         bids={listingInfo.bids}
         timeRemaining={listingInfo.timeRemaining}
       />
+
+      {/* Promo cards in a compact layout */}
+      <div className="space-y-1">
+        {/* BidEdge Promo Component - only for auctions */}
+        {listingInfo.isAuction && (
+          <BidEdgePromo
+            isPremium={isPremium}
+            isAuction={listingInfo.isAuction}
+            bids={listingInfo.bids}
+            timeRemaining={listingInfo.timeRemaining}
+            onButtonClick={handleNavigateToBidEdge}
+          />
+        )}
+        
+        {/* Arbitrage Alert Promo - only when there's price data showing potential profit */}
+        {priceData && priceData.averagePrice > 0 && !loading && (
+          <ArbitrageAlertPromo
+            isPremium={isPremium}
+            currentPrice={listingInfo.currentPrice || 0}
+            averagePrice={priceData.averagePrice}
+            onButtonClick={handleNavigateToArbitrage}
+          />
+        )}
+      </div>
       
-      {/* Data sharing notification for successfully checked prices */}
+      {/* Data sharing notification for successfully checked prices - more compact */}
       {priceData && priceData.averagePrice > 0 && !loading && (
-        <div className="text-xs text-blue-600 flex items-center p-1">
+        <div className="text-xs text-blue-600 flex items-center">
           <Share className="h-3 w-3 mr-1" />
           <span>Price data available in Negotiator tab</span>
         </div>
@@ -220,8 +217,8 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
         <ConditionValueAnalysis
           loading={loading}
           currentCondition={listingInfo.condition || 'Used'}
-          currentPrice={listingInfo.currentPrice || 0.01} // Ensure there's always a valid price
-          conditionData={mockConditionData} // Pass the mock condition data
+          currentPrice={listingInfo.currentPrice || 0.01}
+          conditionData={mockConditionData}
         />
       )}
       
@@ -234,7 +231,7 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
       {/* Enhanced Affiliate Button */}
       <EnhancedAffiliateButton
         productName={listingInfo.title}
-        currentPrice={listingInfo.currentPrice || 0.01} // Ensure there's always a valid price
+        currentPrice={listingInfo.currentPrice || 0.01}
         suggestedNewPrice={getEstimatedNewPrice()}
         condition={listingInfo.condition}
         className="bg-blue-600 hover:bg-blue-700 text-xs py-1 h-9 font-medium"
@@ -243,19 +240,19 @@ const PriceCheckContent: React.FC<PriceCheckProps> = ({ isPremium }) => {
       {/* Action Buttons */}
       <ActionButtons
         loading={loading}
-        onCheckPrice={handleCheckPriceWithLimit}
+        onCheckPrice={handleCheckPrice}
         productTitle={listingInfo.title}
         itemId={listingInfo.itemId}
-        searchesRemaining={!isPremium ? searchesRemaining : undefined}
+        hasReachedLimit={hasReachedLimit && !isPremium}
       />
     </div>
   );
 };
 
-const PriceCheck: React.FC<PriceCheckProps> = ({ isPremium }) => {
+const PriceCheck: React.FC<PriceCheckProps> = (props) => {
   return (
     <ErrorBoundary>
-      <PriceCheckContent isPremium={isPremium} />
+      <PriceCheckContent {...props} />
     </ErrorBoundary>
   );
 };

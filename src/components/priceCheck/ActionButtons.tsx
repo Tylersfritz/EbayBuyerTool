@@ -1,75 +1,78 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader, Search, ExternalLink } from "lucide-react";
-import AffiliateButton from "@/components/AffiliateButton";
+import { ShareIcon, Sparkles, RefreshCw } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
 
 interface ActionButtonsProps {
   loading: boolean;
   onCheckPrice: () => void;
-  productTitle: string;
+  productTitle?: string;
   itemId?: string;
-  searchesRemaining?: number;
+  hasReachedLimit?: boolean;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({
-  loading,
+const ActionButtons: React.FC<ActionButtonsProps> = ({ 
+  loading, 
   onCheckPrice,
   productTitle,
   itemId,
-  searchesRemaining
+  hasReachedLimit = false,
 }) => {
-  const openOnEbay = () => {
-    if (itemId) {
-      window.open(`https://www.ebay.com/itm/${itemId}`, '_blank');
+  const handleShare = () => {
+    if (!productTitle) {
+      toast.error("No product data available to share");
+      return;
+    }
+    
+    const shareText = `Check out this deal I found on ${productTitle?.substring(0, 50)}${productTitle && productTitle.length > 50 ? '...' : ''}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'DealHaven Price Check',
+        text: shareText,
+        url: window.location.href,
+      })
+      .then(() => toast.success("Shared successfully"))
+      .catch((error) => {
+        console.error('Error sharing:', error);
+        toast.error("Failed to share");
+      });
     } else {
-      window.open(`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(productTitle)}`, '_blank');
+      // Fallback for browsers that don't support the Share API
+      navigator.clipboard.writeText(`${shareText} ${window.location.href}`)
+        .then(() => toast.success("Link copied to clipboard"))
+        .catch(() => toast.error("Failed to copy link"));
     }
   };
   
   return (
-    <div className="space-y-3 mt-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Button 
-          variant="default"
-          className="text-xs font-medium h-10 w-full relative flex items-center justify-center"
-          onClick={onCheckPrice}
-          disabled={loading || (searchesRemaining !== undefined && searchesRemaining <= 0)}
-        >
-          {loading ? (
-            <>
-              <Loader className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              <span>Checking...</span>
-            </>
-          ) : (
-            <>
-              <Search className="mr-1.5 h-3.5 w-3.5" />
-              <span>Check Price</span>
-              {searchesRemaining !== undefined && searchesRemaining <= 3 && searchesRemaining > 0 && (
-                <Badge variant="premium" className="absolute -top-2 -right-2 scale-75 bg-blue-500">
-                  {searchesRemaining} left
-                </Badge>
-              )}
-            </>
-          )}
-        </Button>
-        
-        <Button 
-          variant="secondary"
-          className="text-xs font-medium h-10 w-full flex items-center justify-center" 
-          onClick={openOnEbay}
-        >
-          <span>{itemId ? 'View on eBay' : 'Search on eBay'}</span>
-          <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-        </Button>
-      </div>
+    <div className="grid grid-cols-2 gap-2 mt-1">
+      <Button 
+        type="button"
+        disabled={loading || hasReachedLimit}
+        onClick={onCheckPrice}
+        className="text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-xs py-1 h-9 flex justify-center items-center"
+      >
+        {loading ? (
+          <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+        ) : (
+          <Sparkles className="h-4 w-4 mr-1" />
+        )}
+        {loading ? "Checking..." : "Check Price"}
+      </Button>
       
-      <AffiliateButton 
-        productName={productTitle}
-        buttonText="Buy New on Amazon"
-        className="bg-blue-600 hover:bg-blue-700 w-full text-xs font-medium h-10 flex items-center justify-center"
-      />
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleShare}
+        disabled={!productTitle}
+        className="text-xs py-1 h-9 flex justify-center items-center"
+      >
+        <ShareIcon className="h-4 w-4 mr-1" />
+        Share
+      </Button>
     </div>
   );
 };

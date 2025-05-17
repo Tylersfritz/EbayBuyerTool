@@ -1,4 +1,3 @@
-
 // src/components/priceCheck/types/priceCheckTypes.ts
 
 export interface DataQuality {
@@ -15,7 +14,7 @@ export interface DataQuality {
 
 export interface PriceCheckResponse {
   averagePrice: number;
-  marketRate?: number; // Added to fix type errors
+  marketRate?: number;
   itemCount: number;
   priceRange: { min: number; max: number };
   priceHistory?: { date: string; price: number }[];
@@ -32,17 +31,16 @@ export interface PriceCheckResponse {
 export interface ListingInfo {
   title: string;
   currentPrice: number;
-  price?: number; // Added for backward compatibility
-  buyItNowPrice?: number;
   seller?: string;
   condition?: string;
-  shipping?: string;
-  timeRemaining?: string;
-  bids?: number;
+  shipping?: number | string;
   isAuction?: boolean;
-  itemSpecifics?: Record<string, string>;
+  bids?: number;
+  timeRemaining?: string;
+  buyItNowPrice?: number | string;
   itemId?: string;
-  itemUrl?: string; // Added to fix SnipeForm error
+  itemSpecifics?: Record<string, string>;
+  platform?: 'ebay' | 'mercari' | string;
   quantityAvailable?: number;
   returnPolicy?: string;
   sellerFeedbackScore?: number;
@@ -52,11 +50,14 @@ export interface ListingInfo {
   watchers?: number;
   originalPrice?: number;
   discountPercentage?: number;
-  // Added for backward compatibility with older code
+  itemUrl?: string;
+  // Legacy fields - these will be removed in a future version but keep for compatibility
+  price?: number;
   listingType?: {
     isAuction?: boolean;
     bidsCount?: number;
     endTime?: string;
+    hasBuyItNow?: boolean;
   };
 }
 

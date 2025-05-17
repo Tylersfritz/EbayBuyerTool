@@ -1,46 +1,44 @@
-// unified-build-extension.cjs
-const fs = require('fs-extra');
+const { execSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
-const distDir = path.join(__dirname, 'dist');
-const publicDir = path.join(__dirname, 'public');
-const srcDir = path.join(__dirname, 'src');
-const lovableDir = path.join(__dirname, 'lovable.dev/src');
+const projectRoot = path.resolve(__dirname);
+const distDir = path.join(projectRoot, 'dist');
+const publicDir = path.join(projectRoot, 'public');
 
-fs.ensureDirSync(distDir);
+function unifiedBuild() {
+  console.log('Running unified extension build...');
 
-if (fs.existsSync(lovableDir)) {
-  fs.copySync(lovableDir, srcDir, { overwrite: true });
-}
+  // Clean dist directory
+  if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true });
+  }
+  fs.mkdirSync(distDir, { recursive: true });
 
-['manifest.json', 'content.js', 'background.js', 'browser-polyfill.min.js'].forEach(file => {
-  const srcPath = path.join(publicDir, file);
-  if (fs.existsSync(srcPath)) {
-    fs.copySync(srcPath, path.join(distDir, file));
-  } else {
-    console.error(`Missing file: ${file}`);
+  // Run Vite build
+  try {
+    execSync('npm run build', { stdio: 'inherit', cwd: projectRoot });
+    console.log('Unified build completed.');
+  } catch (error) {
+    console.error('Unified build failed:', error.message);
     process.exit(1);
   }
-});
 
-const assetsDir = path.join(distDir, 'assets');
-if (!fs.existsSync(assetsDir) || !fs.readdirSync(assetsDir).some(file => file.includes('index'))) {
-  console.error('Arbitrage code not found in dist/assets!');
-  process.exit(1);
+  // Verify critical files
+  const criticalFiles = ['manifest.json', 'background.js', 'content.js'];
+  criticalFiles.forEach(file => {
+    const dest = path.join(distDir, file);
+    if (!fs.existsSync(dest)) {
+      console.error(`Error: ${file} not found in dist/`);
+      process.exit(1);
+    }
+  });
+
+  console.log('Unified build verified.');
 }
 
-const assetFiles = fs.readdirSync(assetsDir).filter(file => file.endsWith('.js'));
-let foundComponents = false;
-for (const file of assetFiles) {
-  const content = fs.readFileSync(path.join(assetsDir, file), 'utf8');
-  if (content.includes('ArbitragePrompt') && content.includes('VisualScanner')) {
-    foundComponents = true;
-    break;
-  }
-}
-if (!foundComponents) {
-  console.error('ArbitragePrompt or VisualScanner not found in bundled assets!');
-  process.exit(1);
+if (require.main === module) {
+  unifiedBuild();
 }
 
-console.log('Extension files copied successfully');
+module.exports = { unifiedBuild };

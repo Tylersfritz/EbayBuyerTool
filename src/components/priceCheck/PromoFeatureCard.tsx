@@ -1,0 +1,82 @@
+
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { LucideIcon } from 'lucide-react';
+
+interface PromoFeatureCardProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  buttonText: string;
+  onButtonClick: () => void;
+  isPremium: boolean;
+  showPremiumBadge?: boolean;
+  variant?: "default" | "premium" | "arbitrage";
+}
+
+const PromoFeatureCard: React.FC<PromoFeatureCardProps> = ({
+  icon: Icon,
+  title,
+  description,
+  buttonText,
+  onButtonClick,
+  isPremium,
+  showPremiumBadge = true,
+  variant = "default"
+}) => {
+  // Determine button variant based on the card variant
+  const buttonVariant = variant === "premium" ? "premium" : 
+                        variant === "arbitrage" ? "warning" : 
+                        "default";
+
+  // Make arbitrage cards stand out more with a pulse animation effect
+  const animationClass = variant === "arbitrage" ? "animate-pulse" : "";
+
+  // Determine background color based on variant                      
+  const bgColor = variant === "premium" ? "bg-blue-50 border-blue-100" :
+                  variant === "arbitrage" ? "bg-amber-50 border-amber-100" :
+                  "bg-gray-50 border-gray-200";
+
+  return (
+    <Card className={`mb-1 py-1.5 px-2.5 shadow-sm ${bgColor} ${animationClass}`}>
+      <div className="flex items-start">
+        <div className={`p-1 rounded-full mr-2 flex-shrink-0
+          ${variant === "premium" ? "bg-blue-100 text-blue-600" : 
+            variant === "arbitrage" ? "bg-amber-100 text-amber-600" : 
+            "bg-gray-100 text-gray-600"}`}
+        >
+          <Icon className="h-3 w-3" />
+        </div>
+        
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">{title}</h3>
+            {!isPremium && showPremiumBadge && (
+              <Badge variant={variant === "arbitrage" ? "warning" : "premium"} className="text-xs ml-1">
+                Premium
+              </Badge>
+            )}
+          </div>
+          
+          <p className="text-xs text-muted-foreground mb-1">
+            {description}
+          </p>
+          
+          <Button
+            variant={buttonVariant}
+            size="sm"
+            className="w-full text-xs py-0.5 h-6"
+            onClick={onButtonClick}
+            disabled={!isPremium}
+          >
+            {buttonText}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default PromoFeatureCard;

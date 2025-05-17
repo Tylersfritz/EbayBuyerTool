@@ -22,6 +22,10 @@ This guide will help you build and troubleshoot the DealHavenAI Chrome extension
 
 ## Common Issues & Solutions
 
+### Working Directory Issues
+
+Make sure you're running commands from the project root directory, not from inside the public folder or any other subdirectory.
+
 ### Missing Files
 
 If you see warnings about missing files, the `fix-extension-files.js` script will:
@@ -48,6 +52,50 @@ If builds are failing, try these troubleshooting steps:
 3. Make sure `index.html` doesn't have merge conflicts
 4. If specific files are missing from the `dist` directory after building, you may need to manually copy them from the `public` directory
 
+### Windows Path Issues
+
+On Windows, your path may include backslashes that can cause issues. Use forward slashes in paths when possible, or escape backslashes properly.
+
+### OneDrive Issues
+
+If your project is stored in OneDrive, you might encounter issues with file locking or path resolution. Consider moving the project to a local folder outside of OneDrive for development.
+
+## Manual Build Steps (if automated scripts fail)
+
+If the automated scripts aren't working, you can try these manual steps:
+
+1. Clean the `dist` directory:
+   ```
+   rm -rf dist   # Linux/Mac
+   rmdir /s /q dist   # Windows
+   ```
+
+2. Create a fresh `dist` directory:
+   ```
+   mkdir dist
+   ```
+
+3. Copy required files from `public` to `dist`:
+   ```
+   cp public/manifest.json dist/
+   cp public/icon-*.png dist/
+   cp public/browser-polyfill.min.js dist/
+   cp public/content.js dist/
+   cp public/background.js dist/
+   cp public/mercari-content.js dist/
+   ```
+
+4. Run Vite build:
+   ```
+   npm run build
+   ```
+
+5. Verify that `manifest.json` exists in the `dist` folder:
+   ```
+   cat dist/manifest.json   # Linux/Mac
+   type dist\manifest.json   # Windows
+   ```
+
 ## Extension Requirements
 
 The following files are required for the extension to work:
@@ -57,11 +105,10 @@ The following files are required for the extension to work:
 - Icon files (`icon-16.png`, `icon-48.png`, `icon-128.png`)
 - `index.html` - Main extension popup HTML
 
-## Building From Scratch
+## Final Checklist
 
-If you need to completely rebuild the extension from scratch:
-1. Run `node public/fix-extension-files.js` to ensure all files exist
-2. Delete the `dist` directory if it exists
-3. Run `npm run build` to build the extension
-4. Verify all required files are in the `dist` directory
-
+Before loading the extension in Chrome, verify:
+- `dist/manifest.json` exists and is valid
+- All icon files are present in `dist`
+- All JavaScript files referenced in manifest.json are in `dist`
+- `dist/index.html` exists and references the correct assets

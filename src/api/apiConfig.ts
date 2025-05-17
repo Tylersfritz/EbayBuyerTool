@@ -82,6 +82,15 @@ export async function getApiUrl(endpoint: keyof ApiConfig['endpoints']): Promise
 }
 
 /**
+ * Returns the full absolute API URL regardless of environment
+ * This is primarily used for direct API calls to the Vercel backend
+ */
+export function getFullApiUrl(endpoint: string): string {
+  // Always use the absolute Vercel backend URL
+  return `https://ebay-buyer-tool-zp52.vercel.app${endpoint}`;
+}
+
+/**
  * Saves custom API configuration (for extension environment)
  */
 export async function saveApiConfig(config: Partial<ApiConfig>): Promise<boolean> {
