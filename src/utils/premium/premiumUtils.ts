@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for premium status
  */
@@ -58,11 +57,9 @@ export async function checkPremiumStatus(): Promise<boolean> {
   
   // For development without auth, fall back to localStorage/browser.storage
   if (isExtensionEnvironment()) {
-    // Fixed: Remove type arguments from storage.get call
     const result = await browserAPI.storage.local.get('dealHavenAIPremium');
     return (result as PremiumStorage)?.dealHavenAIPremium === 'active';
   } else {
-    // For development without browser API
     return localStorage.getItem('dealHavenAIPremium') === 'active';
   }
 }
@@ -76,11 +73,9 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
     
     // For logged in users, track in Supabase
     if (session?.session?.user?.id) {
-      // Get the current month key in format YYYY-M (e.g., 2025-5)
       const now = new Date();
       const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
       
-      // Check if the user has already reached the monthly limit (1 for free tier)
       const { count, error: countError } = await supabase
         .from('visual_scanner_logs')
         .select('*', { count: 'exact', head: true })
@@ -92,14 +87,11 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
         return false;
       }
       
-      // If user has already used their monthly limit, return false
       if (count >= FREE_TIER_VISUAL_SCAN_LIMIT) {
         console.error('Monthly upload limit reached');
         return false;
       }
       
-      // We need to cast the table name to any since the types don't 
-      // include our newly updated table with month_key yet
       const { error } = await supabase
         .from('visual_scanner_logs')
         .insert({
@@ -117,30 +109,26 @@ export async function trackVisualScannerUsage(): Promise<boolean> {
     }
     
     // For development, track in localStorage with monthly limit
-    // Extract year and month for the month_key
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_visualScans_${monthKey}`;
     
     if (isExtensionEnvironment()) {
       const browserAPI = getBrowserAPI();
-      // Get current monthly usage count
       const result = await browserAPI.storage.local.get(storageKey);
-      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
+      // Simplified type assertion
+      const currentValue = (result[storageKey] as number | undefined) ?? 0;
+      console.log('trackVisualScannerUsage: Current value:', currentValue);
       
-      // Check if monthly limit reached
       if (currentValue >= FREE_TIER_VISUAL_SCAN_LIMIT) {
         console.error('Monthly upload limit reached');
         return false;
       }
       
-      // Increment usage count
       await browserAPI.storage.local.set({[storageKey]: currentValue + 1});
     } else {
-      // For development without browser API, use localStorage with monthly limit
       const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
       
-      // Check if monthly limit reached
       if (current >= FREE_TIER_VISUAL_SCAN_LIMIT) {
         console.error('Monthly upload limit reached');
         return false;
@@ -165,11 +153,9 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
     
     // For logged in users, track in Supabase
     if (session?.session?.user?.id) {
-      // Get the current month key in format YYYY-M (e.g., 2025-5)
       const now = new Date();
       const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
       
-      // Check if the user has already reached the monthly limit
       const { count, error: countError } = await supabase
         .from('price_check_logs')
         .select('*', { count: 'exact', head: true })
@@ -184,7 +170,6 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
         };
       }
       
-      // If user has already used their monthly limit, return false
       if (count >= FREE_TIER_PRICE_CHECK_LIMIT) {
         console.log('Monthly price check limit reached');
         return { 
@@ -194,12 +179,11 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
         };
       }
       
-      // Insert the usage log
       const { error } = await supabase
         .from('price_check_logs')
         .insert({
           user_id: session.session.user.id,
-          item_title: itemTitle.substring(0, 255), // Limit title length
+          item_title: itemTitle.substring(0, 255),
           item_price: itemPrice,
           month_key: monthKey
         });
@@ -219,18 +203,17 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
     }
     
     // For development, track in localStorage with monthly limit
-    // Extract year and month for the month_key
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     const storageKey = `dealHavenAI_priceChecks_${monthKey}`;
     
     if (isExtensionEnvironment()) {
       const browserAPI = getBrowserAPI();
-      // Get current monthly usage count
       const result = await browserAPI.storage.local.get(storageKey);
-      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
+      // Simplified type assertion
+      const currentValue = (result[storageKey] as number | undefined) ?? 0;
+      console.log('trackPriceCheckUsage: Current value:', currentValue);
       
-      // Check if monthly limit reached
       if (currentValue >= FREE_TIER_PRICE_CHECK_LIMIT) {
         console.log('Monthly price check limit reached');
         return { 
@@ -240,7 +223,6 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
         };
       }
       
-      // Increment usage count
       const value = currentValue + 1;
       await browserAPI.storage.local.set({[storageKey]: value});
       return { 
@@ -248,10 +230,8 @@ export async function trackPriceCheckUsage(itemTitle: string, itemPrice: number)
         count: value
       };
     } else {
-      // For development without browser API, use localStorage with monthly limit
       const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
       
-      // Check if monthly limit reached
       if (current >= FREE_TIER_PRICE_CHECK_LIMIT) {
         console.log('Monthly price check limit reached');
         return { 
@@ -310,7 +290,7 @@ export async function hasReachedPriceCheckLimit(): Promise<boolean> {
     if (isExtensionEnvironment()) {
       const browserAPI = getBrowserAPI();
       const result = await browserAPI.storage.local.get(storageKey);
-      const currentValue = (result as unknown as Record<string, number>)[storageKey] || 0;
+      const currentValue = (result[storageKey] as number | undefined) ?? 0;
       return currentValue >= FREE_TIER_PRICE_CHECK_LIMIT;
     } else {
       const current = parseInt(localStorage.getItem(storageKey) || '0', 10);
@@ -331,17 +311,14 @@ export async function getVisualScannerUsageCount(): Promise<number> {
     
     // For logged in users, get count from Supabase
     if (session?.session?.user?.id) {
-      // Get the first day of current month
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       
-      // We need to cast the table name to any since the types don't 
-      // include our newly created table yet
-      const { count, error } = await (supabase
-        .from('visual_scanner_logs' as any)
+      const { count, error } = await supabase
+        .from('visual_scanner_logs')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.session.user.id)
-        .gte('scan_date', firstDayOfMonth) as any);
+        .gte('scan_date', firstDayOfMonth);
         
       if (error) {
         console.error('Error getting visual scanner usage count:', error);
@@ -359,7 +336,7 @@ export async function getVisualScannerUsageCount(): Promise<number> {
     if (isExtensionEnvironment()) {
       const browserAPI = getBrowserAPI();
       const result = await browserAPI.storage.local.get(storageKey);
-      return (result as unknown as Record<string, number>)[storageKey] || 0;
+      return (result[storageKey] as number | undefined) ?? 0;
     } else {
       return parseInt(localStorage.getItem(storageKey) || '0', 10);
     }
@@ -403,7 +380,7 @@ export async function getPriceCheckUsageCount(): Promise<number> {
     if (isExtensionEnvironment()) {
       const browserAPI = getBrowserAPI();
       const result = await browserAPI.storage.local.get(storageKey);
-      return (result as unknown as Record<string, number>)[storageKey] || 0;
+      return (result[storageKey] as number | undefined) ?? 0;
     } else {
       return parseInt(localStorage.getItem(storageKey) || '0', 10);
     }
